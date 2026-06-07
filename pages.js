@@ -6,21 +6,16 @@ const APP_VIEW_NAMES = {
   site: 'Site',
   tv: 'TV View',
   mobile: 'Mobile Menu',
-  'mobile-v2': 'Mobile V2',
   portal: 'Portal',
-  manager: 'Manager View',
-  employee: 'Employee View',
 };
 
 const PAGE_STATE = {
   site: {
     selectedPlan: 'growth',
+    activeMoment: 'market',
   },
   mobile: {
     selectedCat: 'all',
-  },
-  mobileV2: {
-    expandedId: null,
   },
   portal: {
     role: 'owner',
@@ -136,7 +131,6 @@ function injectPageShell() {
       <a class="page-chip" href="?view=site" data-view="site">Site</a>
       <a class="page-chip" href="?view=tv" data-view="tv">TV</a>
       <a class="page-chip" href="?view=mobile" data-view="mobile">Mobile</a>
-      <a class="page-chip" href="?view=mobile-v2" data-view="mobile-v2">Mobile V2</a>
       <a class="page-chip" href="?view=portal" data-view="portal">Portal</a>
     </nav>
 
@@ -144,82 +138,102 @@ function injectPageShell() {
 
     <section id="siteView" class="alt-view site-view">
       <div class="site-shell">
-        <section class="site-hero">
+        <section id="site-hero" class="site-hero">
           <div class="site-hero-inner">
             <div class="site-kicker">Night Economy</div>
-            <h1>The live cocktail market for modern venues.</h1>
-            <p>We turn a static menu into a live market guests follow, teams run with confidence, and operators control from one system.</p>
-            <div class="site-cta-row">
-              <button class="site-primary" id="siteStartTrial">Subscribe</button>
+            <h1>Turn your menu into a live market.</h1>
+            <p>Night Economy brings live pricing, momentum, and market moments to the room, giving guests a reason to look up, order faster, and come back for what happens next.</p>
+            <div class="site-hero-stats" aria-label="Live market stats">
+              <span>Live index +12.4%</span>
+              <span>Volume 1,840 orders</span>
+              <span>Volatility controlled</span>
             </div>
-            <div class="site-scroll-cue">Scroll to see how it works</div>
+            <div class="site-hero-foot">Built for bars, hotels, members clubs, and hospitality groups</div>
           </div>
         </section>
 
-        <section class="site-section site-story">
-          <div class="site-story-grid">
+        <section id="site-why" class="site-section site-why">
+          <div class="site-section-split">
             <div>
-              <div class="site-kicker">About</div>
-              <h2>Night Economy makes service feel alive.</h2>
+              <div class="site-kicker">Why it wins</div>
+              <h2>Software the room can feel.</h2>
             </div>
-            <p>Built for premium hospitality, Night Economy gives you a cinematic room display, a guest-facing mobile market, and an operator portal that keeps pricing, stock, permissions, and service rhythm under control.</p>
+            <p>Night Economy works because it is instantly legible. Guests understand what is moving, staff know where to guide demand, and operators stay in control without slowing service down.</p>
           </div>
         </section>
 
-        <section class="site-section">
+        <section id="site-what" class="site-section">
           <div class="site-section-intro">
-            <div class="site-kicker">Surfaces</div>
-            <h2>One product. Four distinct jobs.</h2>
-            <p>Each surface has a single purpose, so the experience stays elegant for guests and useful for operators.</p>
+            <div class="site-kicker">What you get</div>
+            <h2>One system. Three wins.</h2>
           </div>
-          <div class="site-surface-grid">
-            <article class="site-surface-card tone-room">
-              <span>TV</span>
-              <strong>The room display</strong>
-              <p>A cinematic board for live price movement, spotlight drinks, and market moments the whole venue can feel.</p>
+          <div class="site-value-grid">
+            <article class="site-value-card tone-room">
+              <span>3</span>
+              <strong>Connected product surfaces</strong>
+              <p>Room display, guest mobile, and operator portal all work together as one system.</p>
             </article>
-            <article class="site-surface-card tone-guest">
-              <span>Mobile</span>
-              <strong>The guest companion</strong>
-              <p>A cleaner mobile market that helps guests decide what to buy now, with detail on demand instead of clutter.</p>
+            <article class="site-value-card tone-guest">
+              <span>1</span>
+              <strong>Shared live market model</strong>
+              <p>Every screen reflects the same live state, so the product feels consistent at every touchpoint.</p>
             </article>
-            <article class="site-surface-card tone-ops">
-              <span>Portal</span>
-              <strong>The operator command center</strong>
-              <p>Open the market, manage pricing and stock, control access, and monitor service without losing the floor.</p>
+            <article class="site-value-card tone-ops">
+              <span>∞</span>
+              <strong>Moments that keep attention alive</strong>
+              <p>Movement, spotlight moments, and crash events give guests fresh reasons to look up and re-engage.</p>
             </article>
           </div>
         </section>
 
-        <section class="site-section">
+        <section id="site-how" class="site-section site-how">
           <div class="site-section-intro">
             <div class="site-kicker">How It Works</div>
-            <h2>Simple enough for tonight. Strong enough to scale.</h2>
+            <h2>Three moments move the market.</h2>
+            <p>From live market movement to editorial spotlighting to high-attention event windows, each moment is designed to influence demand in a different way.</p>
           </div>
-          <div class="site-flow">
-            <div class="site-flow-card">
-            <span>01</span>
-            <strong>Show the market</strong>
-            <p>Put the live board on the big screen and let the room follow the night.</p>
-            </div>
-            <div class="site-flow-card">
-            <span>02</span>
-            <strong>Let guests play</strong>
-            <p>Guests check mobile prices, trending drinks, and the current market mood.</p>
-            </div>
-            <div class="site-flow-card">
-            <span>03</span>
-            <strong>Run the venue</strong>
-            <p>Your team manages stock, pricing, permissions, and performance from one portal.</p>
-            </div>
+          <div class="site-moment-tabs" role="tablist" aria-label="How it works">
+            <button class="site-moment-tab" data-site-moment="market" type="button">Market</button>
+            <button class="site-moment-tab" data-site-moment="spotlight" type="button">Spotlight</button>
+            <button class="site-moment-tab" data-site-moment="crash" type="button">Crash</button>
+          </div>
+          <div class="site-moment-panel" id="siteMomentPanel"></div>
+        </section>
+
+        <section id="site-testimonials" class="site-section site-testimonials">
+          <div class="site-section-intro">
+            <div class="site-kicker">What people say</div>
+            <h2>The value is obvious fast.</h2>
+          </div>
+          <div class="site-testimonial-grid">
+            <article class="site-testimonial-card tone-cream">
+              <div class="quote-mark">"</div>
+              <p>It stops feeling like a menu and starts feeling like a live part of the venue. Guests begin talking about what is moving before the team even prompts them.</p>
+              <span>Venue founder, premium cocktail concept</span>
+            </article>
+            <article class="site-testimonial-card tone-white">
+              <div class="quote-mark">"</div>
+              <p>The crash mechanic is what guests remember, but the control layer is what makes the product operationally usable.</p>
+              <span>Operator, launch partner</span>
+            </article>
+            <article class="site-testimonial-card tone-green">
+              <div class="quote-mark">"</div>
+              <p>Spotlight and live value give us a natural way to guide demand without making the room feel scripted.</p>
+              <span>Bar manager, hotel group</span>
+            </article>
+            <article class="site-testimonial-card tone-dark">
+              <div class="quote-mark">"</div>
+              <p>It gives the room its own ritual. Guests begin following the market instead of just reading a list and moving on.</p>
+              <span>Creative director, launch venue</span>
+            </article>
           </div>
         </section>
 
-        <section class="site-section site-subscribe">
+        <section id="site-subscribe" class="site-section site-subscribe">
           <div class="site-subscribe-copy">
-            <div class="site-kicker">Subscribe</div>
+            <div class="site-kicker">Get started</div>
             <h2>Start your first venue.</h2>
-            <p>Choose a plan, add the venue, and open the operator portal. This prototype flow creates a live venue profile instantly.</p>
+            <p>Choose the right plan, create the venue, and open your operator portal. From there, your live market is ready to configure and run.</p>
           </div>
           <div class="site-signup-panel">
             <div class="site-pricing-minimal" id="sitePricing"></div>
@@ -248,6 +262,33 @@ function injectPageShell() {
             </form>
           </div>
         </section>
+
+        <footer class="site-footer">
+          <div class="site-footer-brand">
+            <div class="site-kicker">Night Economy</div>
+            <h2>Build the venue people watch.</h2>
+          </div>
+          <div class="site-footer-cols">
+            <div>
+              <span>Product</span>
+              <a href="#site-why">Why it works</a>
+              <a href="#site-how">Product moments</a>
+              <a href="#site-subscribe">Operator portal</a>
+            </div>
+            <div>
+              <span>Surfaces</span>
+              <a href="#site-why">Room display</a>
+              <a href="#site-why">Guest mobile</a>
+              <a href="#site-why">Control center</a>
+            </div>
+            <div>
+              <span>Company</span>
+              <a href="mailto:hello@nighteconomy.app">hello@nighteconomy.app</a>
+              <a href="#site-why">Founders</a>
+              <a href="#site-hero">Back to top</a>
+            </div>
+          </div>
+        </footer>
       </div>
     </section>
 
@@ -264,40 +305,6 @@ function injectPageShell() {
       <div class="featured-grid" id="mobileFeatured"></div>
       <div class="mobile-filters" id="mobileFilters"></div>
       <div class="menu-grid" id="mobileCatalog"></div>
-    </section>
-
-    <section id="mobile-v2View" class="alt-view mobile-v2-view">
-      <div class="mobile-v2-frame">
-        <div class="mobile-v2-topbar">
-          <div class="mobile-v2-kicker-wrap">
-            <div class="mobile-v2-kicker">Night Economy</div>
-            <h1 class="mobile-v2-title">Live Market Board</h1>
-          </div>
-          <div class="mobile-v2-status">
-            <span class="mobile-v2-live-dot"></span>
-            <span id="mobileV2Timestamp">Updating…</span>
-          </div>
-        </div>
-        <div class="mobile-v2-board-wrap">
-          <div class="board mobile-v2-board-shell">
-            <div class="board-hdr mobile-v2-board-hdr">
-              <span class="slbl">Live Market Board</span>
-              <div class="mobile-v2-summary" id="mobileV2Summary"></div>
-              <span class="updt" id="mobileV2BoardStamp">—</span>
-            </div>
-            <div class="col-hdr mobile-v2-col-hdr">
-              <div class="ch">Drink</div>
-              <div class="ch">Price</div>
-              <div class="ch">Trend</div>
-              <div class="ch">Move</div>
-              <div class="ch"></div>
-            </div>
-            <div class="board-scroll mobile-v2-scroll">
-              <div class="board-inner mobile-v2-board" id="mobileV2Board"></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
 
     <section id="portalView" class="alt-view portal-view">
@@ -337,81 +344,6 @@ function injectPageShell() {
       </div>
     </section>
 
-    <section id="managerView" class="alt-view manager-view">
-      <div class="manager-sticky">
-        <div class="alt-hero manager-hero">
-          <div>
-            <div class="alt-kicker">Night Economy</div>
-            <h1 class="alt-title">Manager Dashboard</h1>
-            <p class="alt-sub">Sales, performance, live history, and operational alerts in one place.</p>
-          </div>
-          <div class="alt-stats" id="managerSummary"></div>
-        </div>
-        <div class="manager-toolbar">
-          <div class="range-toggle" id="managerRange"></div>
-          <div class="manager-search-wrap">
-            <input id="managerSearch" class="manager-search" type="search" placeholder="Search drink, category, or type">
-          </div>
-          <div class="manager-sort-group" id="managerSort"></div>
-          <button class="manager-action" id="managerExportCsv">Export CSV</button>
-          <button class="manager-action" id="managerExportJson">Export JSON</button>
-        </div>
-      </div>
-      <div class="dash-grid">
-        <div class="dash-card dash-card-wide">
-          <div class="card-hdr">Sales Records</div>
-          <div class="record-head" id="managerRecordHead"></div>
-          <div class="record-list" id="managerSales"></div>
-        </div>
-        <div class="dash-card">
-          <div class="card-hdr">Category Performance</div>
-          <div class="category-cards" id="managerCategories"></div>
-        </div>
-        <div class="dash-card">
-          <div class="card-hdr">What Needs Attention</div>
-          <div class="alert-list" id="managerAlerts"></div>
-        </div>
-        <div class="dash-card dash-card-wide">
-          <div class="card-hdr">Change Log</div>
-          <div class="history-list" id="managerHistory"></div>
-        </div>
-        <div class="dash-card dash-card-wide manager-drawer" id="managerDrawer">
-          <div class="card-hdr">Record Drill-Down</div>
-          <div id="managerDrawerBody" class="drawer-body">Select a sales record to inspect its history.</div>
-        </div>
-      </div>
-    </section>
-
-    <section id="employeeView" class="alt-view employee-view">
-      <div class="employee-sticky">
-        <div class="alt-hero employee-hero">
-          <div>
-            <div class="alt-kicker">Night Economy</div>
-            <h1 class="alt-title">Employee Launch Board</h1>
-            <p class="alt-sub">Set floors and ceilings, change the normal sale price, rename drinks, move categories, and manage sold-out status.</p>
-          </div>
-          <div class="alt-stats" id="employeeSummary"></div>
-        </div>
-        <div class="employee-toolbar">
-          <div class="manager-search-wrap">
-            <input id="employeeSearch" class="manager-search" type="search" placeholder="Search drinks">
-          </div>
-          <button class="manager-action" id="employeeUndo">Undo last change</button>
-          <button class="manager-action" id="employeeHighlight">Highlight changes: on</button>
-          <div class="save-pill" id="employeeSaveState">Saved</div>
-        </div>
-        <div class="employee-preview" id="employeePreview"></div>
-      </div>
-      <div class="employee-layout">
-        <div class="employee-panel">
-          <div class="employee-panel-head">
-            <div class="card-hdr">Drink Controls</div>
-            <div class="employee-cat-filters" id="employeeCatFilters"></div>
-          </div>
-          <div class="employee-list" id="employeeControls"></div>
-        </div>
-      </div>
-    </section>
   `;
 
   document.body.appendChild(shell);
@@ -817,85 +749,114 @@ function renderMobileView() {
   renderCards(PAGE_STATE.mobile.selectedCat);
 }
 
-function renderMobileV2View() {
-  const board = document.getElementById('mobileV2Board');
-  const summary = document.getElementById('mobileV2Summary');
-  const timestamp = document.getElementById('mobileV2Timestamp');
-  const boardStamp = document.getElementById('mobileV2BoardStamp');
-  if (!board || !summary || !timestamp || !boardStamp) return;
+const SITE_MOMENTS = {
+  market: {
+    kicker: '01 Market',
+    headline: 'The board sets the pace.',
+    copy: 'Guests see what is rising, what is cooling, and where the value is right now, turning pricing into a shared venue signal.',
+    label: 'Market board',
+    state: 'Open',
+    foot: 'Open market · clear demand signal',
+    rows: [
+      { name: 'Classic Margarita', value: '£12.80' },
+      { name: 'Smokey Old Fashioned', value: '£13.40' },
+      { name: 'Hugo', value: '£11.60' },
+    ],
+    metrics: [
+      { label: 'Movement', value: '+8.4%', tone: 'up' },
+      { label: 'Volume', value: '1,840', tone: '' },
+      { label: 'Visibility', value: 'High', tone: '' },
+    ],
+  },
+  spotlight: {
+    kicker: '02 Spotlight',
+    headline: 'The room follows the feature.',
+    copy: 'Pull one drink into focus so the room has a clear visual cue and a reason to pay attention to what is trending now.',
+    label: 'Featured drink',
+    state: 'Live',
+    foot: 'Spotlight moment · featured pour',
+    hero: { name: 'Oink on the Rocks', price: '£9.62', sub: 'old fashioned · in demand tonight' },
+    rows: [
+      { name: 'Best value', value: '£8.40' },
+      { name: 'Momentum', value: 'Strong' },
+      { name: 'Signal', value: 'Feature-led' },
+    ],
+    metrics: [
+      { label: 'Attention', value: 'High', tone: 'up' },
+      { label: 'Move', value: '+8.1%', tone: 'up' },
+      { label: 'Status', value: 'Featured', tone: '' },
+    ],
+  },
+  crash: {
+    kicker: '03 Crash',
+    headline: 'The moment resets the room.',
+    copy: 'Use a category crash to create urgency, trigger a reset, and give the floor a reason to act before the window closes.',
+    label: 'Crash mode',
+    state: 'Live',
+    foot: 'Crash moment · category reset',
+    rows: [
+      { name: 'Cocktails', value: 'Down 35%' },
+      { name: 'Spirits', value: 'Down 28%' },
+      { name: 'Signature', value: 'Reset live' },
+    ],
+    alert: 'Buy window open',
+    metrics: [
+      { label: 'Pressure', value: 'High', tone: 'up' },
+      { label: 'Move', value: '-35%', tone: 'dn' },
+      { label: 'Window', value: 'Open', tone: '' },
+    ],
+  },
+};
 
-  const drinks = [...D];
-  const available = drinks.filter(d => !d.soldOut);
-  const gainers = drinks.filter(d => d.p > d.b).length;
-  const decliners = drinks.filter(d => d.p < d.b).length;
-  const avgMove = drinks.length
-    ? drinks.reduce((sum, d) => sum + ((d.p - d.b) / d.b * 100), 0) / drinks.length
-    : 0;
-  const hottest = [...drinks].sort((a, b) => b.o - a.o)[0];
-  const now = new Date();
+function renderSiteMomentPanel(panel, momentKey) {
+  const moment = SITE_MOMENTS[momentKey] || SITE_MOMENTS.market;
+  const rows = moment.rows.map(row => `
+    <div class="site-moment-row">
+      <span>${escapeHtml(row.name)}</span>
+      <strong>${escapeHtml(row.value)}</strong>
+    </div>
+  `).join('');
 
-  timestamp.textContent = `Live ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-  boardStamp.textContent = `${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-  summary.innerHTML = `
-    <span>${available.length}/${drinks.length} live</span>
-    <span class="${avgMove >= 0 ? 'up' : 'dn'}">${avgMove >= 0 ? '+' : ''}${avgMove.toFixed(1)}%</span>
-    <span>${escapeHtml(hottest ? hottest.n : '—')}</span>
-  `;
-
-  const grouped = groupBy(drinks, drink => drink.cat);
-  board.innerHTML = Object.entries(grouped).map(([cat, items]) => {
-    const catChange = (items.reduce((sum, drink) => sum + ((drink.p - drink.b) / drink.b * 100), 0) / items.length).toFixed(1);
-    const rows = items.map(drink => {
-      const change = ((drink.p - drink.b) / drink.b) * 100;
-      const trend = change >= 0 ? 'up' : 'dn';
-      const soldBadge = drink.soldOut ? '<span class="val-badge">SOLD OUT</span>' : '';
-      const isExpanded = PAGE_STATE.mobileV2.expandedId === drink.id;
-      const timeline = (drink.timeline && drink.timeline.length ? drink.timeline : buildSyntheticTimeline(drink)).slice(-43);
-      const low = Math.min(...timeline.map(point => point.p));
-      const high = Math.max(...timeline.map(point => point.p));
-      return `
-        <button class="drow mobile-v2-row ${drink.o > 0 ? 'fresh' : 'decaying'} ${drink.soldOut ? 'sold-out' : ''} ${isExpanded ? 'expanded' : ''}" data-mobile-v2-drink="${escapeHtml(drink.id)}" aria-expanded="${isExpanded ? 'true' : 'false'}">
-          <div><div class="dname">${escapeHtml(drink.n)}${soldBadge}</div><div class="dcat-sub">${escapeHtml(drink.cat.replace('-', ' '))}</div></div>
-          <div class="dprice ${trend}">${formatMoney(drink.p)}</div>
-          <div class="spark-cell">${buildPricePositionMarkup(drink)}</div>
-          <div class="dpct ${trend}">${change >= 0 ? '+' : ''}${change.toFixed(1)}%</div>
-          <div class="decay-wrap"><div class="decay-bar"><div class="decay-fill" style="width:${Math.min(100, drink.o * 8.33)}%"></div></div><div class="darr ${trend}">${trend === 'up' ? '▲' : '▼'}</div></div>
-        </button>
-        ${isExpanded ? `
-          <div class="mobile-v2-detail" data-mobile-v2-detail="${escapeHtml(drink.id)}">
-            <div class="mobile-v2-detail-chart" id="mobileV2Chart-${escapeHtml(drink.id)}"></div>
-            <div class="mobile-v2-detail-meta">
-              <span>Low ${formatMoney(low)}</span>
-              <span>Base ${formatMoney(drink.b)}</span>
-              <span>High ${formatMoney(high)}</span>
+  panel.innerHTML = `
+    <article class="site-moment-card site-moment-${escapeHtml(momentKey)}">
+      <div class="site-moment-copy">
+        <div class="site-moment-kicker">${escapeHtml(moment.kicker)}</div>
+        <h3>${escapeHtml(moment.headline)}</h3>
+        <p>${escapeHtml(moment.copy)}</p>
+      </div>
+      <div class="site-moment-visual">
+        <div class="site-moment-visual-head">
+          <span>${escapeHtml(moment.label)}</span>
+          <strong>${escapeHtml(moment.state)}</strong>
+        </div>
+        ${momentKey === 'spotlight' ? `
+          <div class="site-moment-hero">
+            <div>
+              <span>Featured drink</span>
+              <strong>${escapeHtml(moment.hero.name)}</strong>
+              <p>${escapeHtml(moment.hero.sub)}</p>
             </div>
+            <b>${escapeHtml(moment.hero.price)}</b>
           </div>
         ` : ''}
-      `;
-    }).join('');
-
-    return `
-      <section class="mobile-v2-section">
-        <div class="mobile-v2-section-head">
-          <span class="cat-name mobile-v2-section-name ${escapeHtml(cat)}">◆ ${escapeHtml(cat.replace('-', ' '))}</span>
-          <span class="cat-meta mobile-v2-section-meta">${catChange > 0 ? '+' : ''}${catChange}%</span>
+        ${momentKey === 'crash' ? `
+          <div class="site-moment-alert">${escapeHtml(moment.alert)}</div>
+        ` : ''}
+        <div class="site-moment-list">
+          ${rows}
         </div>
-        <div class="mobile-v2-list">${rows}</div>
-      </section>
-    `;
-  }).join('');
-  board.querySelectorAll('[data-mobile-v2-drink]').forEach(row => {
-    row.addEventListener('click', () => {
-      const id = row.dataset.mobileV2Drink;
-      PAGE_STATE.mobileV2.expandedId = PAGE_STATE.mobileV2.expandedId === id ? null : id;
-      renderMobileV2View();
-    });
-  });
-  if (PAGE_STATE.mobileV2.expandedId) {
-    const drink = D.find(item => item.id === PAGE_STATE.mobileV2.expandedId);
-    const chartEl = document.getElementById(`mobileV2Chart-${PAGE_STATE.mobileV2.expandedId}`);
-    if (drink && chartEl) renderSpotlightTrendChart(chartEl, drink);
-  }
+        <div class="site-moment-metrics">
+          ${moment.metrics ? moment.metrics.map(metric => `
+            <div class="site-moment-metric">
+              <span>${escapeHtml(metric.label)}</span>
+              <strong class="${metric.tone || ''}">${escapeHtml(metric.value)}</strong>
+            </div>
+          `).join('') : ''}
+        </div>
+        <div class="site-moment-foot">${escapeHtml(moment.foot)}</div>
+      </div>
+    </article>
+  `;
 }
 
 function renderSiteView() {
@@ -905,13 +866,28 @@ function renderSiteView() {
   const ownerInput = document.getElementById('siteOwnerName');
   const emailInput = document.getElementById('siteOwnerEmail');
   const planSelect = document.getElementById('sitePlanSelect');
-  const startTrial = document.getElementById('siteStartTrial');
-  if (!pricing || !form || !venueInput || !ownerInput || !emailInput || !planSelect || !startTrial) return;
+  const momentPanel = document.getElementById('siteMomentPanel');
+  if (!pricing || !form || !venueInput || !ownerInput || !emailInput || !planSelect || !momentPanel) return;
 
   const plans = [
-    { id: 'starter', name: 'Starter', price: '£149/mo', blurb: 'Small venue launch.', perks: ['Board', 'Mobile menu'] },
-    { id: 'growth', name: 'Growth', price: '£299/mo', blurb: 'Full operator setup.', perks: ['Portal', 'Analytics'] },
-    { id: 'premium', name: 'Premium', price: '£549/mo', blurb: 'Multi-venue rollout.', perks: ['Support', 'Custom rollout'] },
+    {
+      id: 'starter',
+      name: 'Starter',
+      price: '£149/mo',
+      blurb: 'For venues proving demand with one live room display and guest mobile access.',
+    },
+    {
+      id: 'growth',
+      name: 'Growth',
+      price: '£299/mo',
+      blurb: 'For operators who want full market controls, stronger guidance, and daily visibility.',
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: '£549/mo',
+      blurb: 'For groups rolling Night Economy out across multiple venues with hands-on support.',
+    },
   ];
 
   pricing.innerHTML = plans.map(plan => `
@@ -930,12 +906,25 @@ function renderSiteView() {
       renderSiteView();
     });
   });
+  planSelect.onchange = () => {
+    PAGE_STATE.site.selectedPlan = planSelect.value;
+    renderSiteView();
+  };
 
   const profile = loadPortalProfile();
   venueInput.value = profile.venueName === 'Pickle House' ? '' : profile.venueName;
   ownerInput.value = profile.ownerName === 'Venue Owner' ? '' : profile.ownerName;
   emailInput.value = profile.email === 'owner@night-economy.app' ? '' : profile.email;
   planSelect.value = PAGE_STATE.site.selectedPlan;
+  renderSiteMomentPanel(momentPanel, PAGE_STATE.site.activeMoment);
+
+  document.querySelectorAll('.site-moment-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.siteMoment === PAGE_STATE.site.activeMoment);
+    tab.addEventListener('click', () => {
+      PAGE_STATE.site.activeMoment = tab.dataset.siteMoment;
+      renderSiteView();
+    });
+  });
 
   form.onsubmit = (event) => {
     event.preventDefault();
@@ -957,11 +946,6 @@ function renderSiteView() {
     window.history.pushState({}, '', url);
     setActiveAppView('portal');
     refreshAuxViews();
-  };
-
-  startTrial.onclick = () => {
-    document.querySelector('.site-subscribe')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(() => venueInput.focus(), 300);
   };
 }
 
@@ -1276,7 +1260,7 @@ function renderPortalView() {
           <div class="card-hdr">Checklist</div>
           <div class="portal-checklist">
             <article><strong>Board live</strong><span>TV display is ready to run the room.</span></article>
-            <article><strong>Mobile linked</strong><span>Mobile V2 reflects the same market state.</span></article>
+            <article><strong>Mobile linked</strong><span>Mobile reflects the same market state.</span></article>
             <article><strong>Price rails set</strong><span>Each drink has a base, floor, and ceiling.</span></article>
             <article><strong>Team access</strong><span>${PAGE_STATE.portal.role === 'staff' ? 'Staff-safe mode is active.' : 'Manager access is available tonight.'}</span></article>
           </div>
@@ -1391,7 +1375,7 @@ function renderPortalView() {
           <div class="card-hdr">Devices & Surfaces</div>
           <div class="portal-checklist">
             <article><strong>TV surface</strong><span>Configured for the room display.</span></article>
-            <article><strong>Mobile V2</strong><span>Configured for guest-facing market browsing.</span></article>
+            <article><strong>Mobile</strong><span>Configured for guest-facing market browsing.</span></article>
             <article><strong>Portal</strong><span>Configured for operator access and control.</span></article>
           </div>
         </div>
@@ -2085,10 +2069,7 @@ function refreshAuxViews() {
   const view = getAppView();
   if (view === 'site') renderSiteView();
   if (view === 'mobile') renderMobileView();
-  if (view === 'mobile-v2') renderMobileV2View();
   if (view === 'portal') renderPortalView();
-  if (view === 'manager') renderManagerView();
-  if (view === 'employee') renderEmployeeView();
 }
 
 function initAppPages() {
@@ -2119,8 +2100,8 @@ function initAppPages() {
 
   document.addEventListener('keydown', (event) => {
     const viewNow = getAppView();
-    if (event.key === '/' && (viewNow === 'manager' || viewNow === 'employee' || viewNow === 'portal')) {
-      const inputId = viewNow === 'manager' ? 'managerSearch' : viewNow === 'employee' ? 'employeeSearch' : 'portalDrinkSearch';
+    if (event.key === '/' && viewNow === 'portal') {
+      const inputId = 'portalDrinkSearch';
       const input = document.getElementById(inputId);
       if (input) {
         event.preventDefault();
@@ -2129,7 +2110,7 @@ function initAppPages() {
       }
     }
 
-    if ((viewNow === 'employee' || viewNow === 'portal') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) {
+    if (viewNow === 'portal' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) {
       const visible = getVisibleEmployeeDrinks();
       if (!visible.length) return;
       const currentIndex = Math.max(0, visible.findIndex(d => d.id === PAGE_STATE.employee.selectedId));
@@ -2137,25 +2118,25 @@ function initAppPages() {
         event.preventDefault();
         const next = visible[Math.min(visible.length - 1, currentIndex + 1)];
         PAGE_STATE.employee.selectedId = next ? next.id : visible[0].id;
-        viewNow === 'portal' ? renderPortalView() : renderEmployeeView();
+        renderPortalView();
       }
       if (event.key === 'ArrowUp') {
         event.preventDefault();
         const prev = visible[Math.max(0, currentIndex - 1)];
         PAGE_STATE.employee.selectedId = prev ? prev.id : visible[0].id;
-        viewNow === 'portal' ? renderPortalView() : renderEmployeeView();
+        renderPortalView();
       }
       if (event.key === 'Escape') {
         PAGE_STATE.employee.search = '';
         PAGE_STATE.employee.selectedCat = 'all';
-        viewNow === 'portal' ? renderPortalView() : renderEmployeeView();
+        renderPortalView();
       }
     }
   });
 
   setInterval(() => {
     const viewNow = getAppView();
-    if (viewNow === 'mobile' || viewNow === 'mobile-v2' || viewNow === 'manager' || viewNow === 'portal') refreshAuxViews();
+    if (viewNow === 'mobile' || viewNow === 'portal') refreshAuxViews();
   }, 1500);
 }
 

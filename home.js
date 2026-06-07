@@ -23,6 +23,7 @@ function buildBoard(viewIdx) {
   if (viewIdx !== undefined) currentBoardView = viewIdx;
   const view = BOARD_VIEWS[currentBoardView];
   const inner = document.getElementById('boardInner');
+  const featured = document.getElementById('boardFeatured');
   if (!inner) return;
 
   const labelEl = document.getElementById('boardViewLabel');
@@ -39,11 +40,38 @@ function buildBoard(viewIdx) {
 
   inner.style.transition = 'opacity 0.35s';
   inner.style.opacity = '0';
+  if (featured) featured.style.opacity = '0';
 
   setTimeout(() => {
     inner.innerHTML = '';
     const drinks = D.filter(d => view.ids.includes(d.id));
+    const featuredDrinks = [...drinks]
+      .filter(d => !d.soldOut)
+      .sort((a, b) => b.o - a.o || Math.abs((b.p - b.b) / b.b) - Math.abs((a.p - a.b) / a.b))
+      .slice(0, 3);
     const cats = [...new Set(drinks.map(d => d.cat))];
+
+    if (featured) {
+      featured.innerHTML = featuredDrinks.map((d, idx) => {
+        const pct = ((d.p - d.b) / d.b * 100);
+        const up = d.p >= d.b;
+        return `
+          <article class="feature-tile ${d.soldOut ? 'sold-out' : ''}">
+            <div class="feature-tile-top">
+              <span class="feature-rank">0${idx + 1}</span>
+              <span class="feature-cat">${d.cat.replace('-', ' ')}</span>
+            </div>
+            <strong class="feature-name">${d.n}</strong>
+            <div class="feature-bottom">
+              <div class="feature-price ${up ? 'up' : 'dn'}">£${d.p.toFixed(2)}</div>
+              <div class="feature-change ${up ? 'up' : 'dn'}">${up ? '+' : ''}${pct.toFixed(1)}%</div>
+            </div>
+            ${buildPricePositionMarkup(d)}
+          </article>
+        `;
+      }).join('');
+      featured.style.opacity = '1';
+    }
 
     cats.forEach(cat => {
       const items = drinks.filter(d => d.cat === cat);
@@ -120,24 +148,54 @@ function insertTradeRow(dId, isUp, prev, type) {
    PANEL UPDATES
    ════════════════════════════════════════════════════════════════════ */
 
+function getVisibleBoardDrinks() {
+  const view = BOARD_VIEWS[currentBoardView] || BOARD_VIEWS[0];
+  return D.filter(d => view.ids.includes(d.id) && !d.soldOut);
+}
+
+function getTopMover(drinks = getVisibleBoardDrinks()) {
+  return [...drinks].sort((a, b) => Math.abs((b.p - b.b) / b.b) - Math.abs((a.p - a.b) / a.b))[0] || null;
+}
+
+function getBestValue(drinks = getVisibleBoardDrinks()) {
+  return [...drinks].sort((a, b) => a.p - b.p)[0] || null;
+}
+
 function updateMarketPanel() {
-  const sorted = [...D].sort((a, b) => b.p - a.p);
-  const best = sorted[sorted.length - 1];
-  const riser = [...D].sort((a, b) => (b.p - b.b) - (a.p - a.b))[0];
-  const faller = [...D].sort((a, b) => (a.p - a.b) - (b.p - b.b))[0];
-  const mood = D.filter(d => d.p > d.b).length > 6 ? 'Bullish' : 'Bearish';
+  const drinks = getVisibleBoardDrinks();
+  if (!drinks.length) return;
 
-  const riserPct = ((riser.p - riser.b) / riser.b * 100).toFixed(1);
-  const fallerPct = ((faller.p - faller.b) / faller.b * 100).toFixed(1);
-  document.getElementById('mn-hl').textContent = `${riser.n} leads session as ${mood.toLowerCase()} sentiment grips the floor`;
-  document.getElementById('mn-sub').textContent = `Floor activity accelerated tonight. ${riser.n} outpacing the market at ${riserPct > 0 ? '+' : ''}${riserPct}% as buyers move in. ${faller.n} faces selling pressure, down ${fallerPct}%.`;
-  document.getElementById('mn-value').textContent = `£${best.p.toFixed(2)}`;
-  document.getElementById('mn-riser').textContent = riser.n;
-  document.getElementById('mn-faller').textContent = faller.n;
-  document.getElementById('mn-mood').textContent = mood;
-
+  const mover = getTopMover(drinks) || drinks[0];
+  const best = getBestValue(drinks) || drinks[0];
+  const upCount = drinks.filter(d => d.p > d.b).length;
+  const downCount = drinks.filter(d => d.p < d.b).length;
+  const mood = upCount >= downCount ? 'Room heating up' : 'Value opening';
+  const moverChange = ((mover.p - mover.b) / mover.b * 100);
+  const bestChange = ((best.p - best.b) / best.b * 100);
   const now = new Date();
-  document.getElementById('mn-time').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const kickerEl = document.getElementById('storyA-kicker');
+  const headlineEl = document.getElementById('storyA-headline');
+  const copyEl = document.getElementById('storyA-copy');
+  const boardEl = document.getElementById('storyA-board');
+  const moodEl = document.getElementById('storyA-mood');
+  const valueEl = document.getElementById('storyA-value');
+
+  if (kickerEl) kickerEl.textContent = 'Room signal';
+  if (headlineEl) {
+    headlineEl.textContent = mover.p >= mover.b
+      ? `${mover.n} is setting the pace.`
+      : `${mover.n} is cooling the room.`;
+  }
+  if (copyEl) {
+    copyEl.textContent = `${mover.n} is ${moverChange >= 0 ? '+' : ''}${moverChange.toFixed(1)}% against base, while ${best.n} is the cleanest value on the board at ${formatMoney(best.p)}.`;
+  }
+  if (boardEl) boardEl.textContent = mover.n;
+  if (moodEl) moodEl.textContent = mover.p >= mover.b ? mood : 'Cooling off';
+  if (valueEl) valueEl.textContent = `${formatMoney(best.p)}${bestChange > 0 ? ' ▲' : bestChange < 0 ? ' ▼' : ''}`;
+
+  const timeEl = document.getElementById('lupdt');
+  if (timeEl) timeEl.textContent = `Updated ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -181,50 +239,43 @@ function getCategoryRank(drink) {
 }
 
 function updateMiniSpotlight() {
-  const nameEl = document.getElementById('mini-sp-name');
+  const nameEl = document.getElementById('spotA-name');
   if (!nameEl) return;
 
-  const active = [...D].sort((a, b) => b.o - a.o);
-  const drink = active[0].o > 0 ? active[0] : D[Math.floor(Math.random() * D.length)];
+  const active = [...D].filter(d => d.o > 0).sort((a, b) => b.o - a.o || Math.abs((b.p - b.b) / b.b) - Math.abs((a.p - a.b) / a.b));
+  const drink = active[0] || getTopMover(getVisibleBoardDrinks()) || D[Math.floor(Math.random() * D.length)];
+  const timeline = (drink.timeline && drink.timeline.length ? drink.timeline : buildSyntheticTimeline(drink)).slice(-43);
   const chg = ((drink.p - drink.b) / drink.b * 100);
   const isUp = chg >= 0;
 
   nameEl.textContent = drink.n;
-  document.getElementById('mini-sp-sub').textContent = drink.cat.replace('-', ' ');
+  const subEl = document.getElementById('spotA-sub');
+  if (subEl) subEl.textContent = `${drink.cat.replace('-', ' ')} · ${drink.o > 0 ? 'live orders' : 'session snapshot'}`;
 
-  const priceEl = document.getElementById('mini-sp-price');
-  priceEl.textContent = '£' + drink.p.toFixed(2);
-  priceEl.className = 'mini-sp-price ' + (isUp ? 'up' : 'dn');
+  const priceEl = document.getElementById('spotA-price');
+  if (priceEl) priceEl.textContent = formatMoney(drink.p);
 
-  const chgEl = document.getElementById('mini-sp-chg');
-  chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%';
-  chgEl.className = 'mini-sp-chg ' + (isUp ? 'up' : 'dn');
-
-  const chartEl = document.getElementById('mini-sp-chart');
-  if (chartEl) renderSpotlightTrendChart(chartEl, drink);
-  const chartMetaEl = document.getElementById('mini-sp-chart-meta');
-  if (chartMetaEl) {
-    const timeline = (drink.timeline && drink.timeline.length ? drink.timeline : buildSyntheticTimeline(drink)).slice(-43);
-    const prices = timeline.map(point => point.p);
-    const low = Math.min(...prices);
-    const high = Math.max(...prices);
-    const lastTrade = timeline[timeline.length - 1] || null;
-    chartMetaEl.innerHTML = `
-      <span>Low £${low.toFixed(2)}</span>
-      <span>High £${high.toFixed(2)}</span>
-      <span>${lastTrade ? `Last ${new Date(lastTrade.t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Live'}</span>
-    `;
+  const chgEl = document.getElementById('spotA-change');
+  if (chgEl) {
+    chgEl.textContent = `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%`;
+    chgEl.className = isUp ? 'up' : 'dn';
   }
 
-  const barPct = Math.min(100, Math.max(0, ((drink.p / drink.b) - 0.5) * 100));
-  const fillEl = document.getElementById('mini-sp-vs-fill');
-  if (fillEl) {
-    fillEl.style.width = barPct + '%';
-    fillEl.className = 'mini-sp-vs-fill ' + (isUp ? 'up' : 'dn');
-  }
-  const vsValEl = document.getElementById('mini-sp-vs-val');
-  if (vsValEl) {
-    vsValEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%';
-    vsValEl.className = 'mini-sp-vs-val ' + (isUp ? 'up' : 'dn');
+  const low = Math.min(...timeline.map(point => point.p));
+  const high = Math.max(...timeline.map(point => point.p));
+  const lowEl = document.getElementById('spotA-low');
+  const highEl = document.getElementById('spotA-high');
+  if (lowEl) lowEl.textContent = formatMoney(low);
+  if (highEl) highEl.textContent = formatMoney(high);
+
+  const boardEl = document.getElementById('spotA-board');
+  if (boardEl) boardEl.textContent = drink.cat.replace('-', ' ');
+  const moodEl = document.getElementById('spotA-mood');
+  if (moodEl) moodEl.textContent = drink.p >= drink.b ? 'Live pick' : 'Good value';
+
+  const chartEl = document.getElementById('spotA-chart');
+  if (chartEl) {
+    chartEl.innerHTML = svgSpark(timeline.map(point => point.p), isUp, 260, 170);
+    hydrateLineCharts(chartEl);
   }
 }

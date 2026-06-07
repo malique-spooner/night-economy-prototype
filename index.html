@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<link rel="stylesheet" href="styles.css?v=23">
+<link rel="stylesheet" href="styles.css?v=27">
 <style>
 .menu-toggle {
   position: fixed;
@@ -59,11 +59,6 @@
       </div>
     </div>
 
-    <div class="ticker">
-      <div class="t-badge">Live prices</div>
-      <div class="t-track"><div class="t-inner" id="tinner"></div></div>
-    </div>
-
     <div class="body">
       <div class="board">
         <div class="board-hdr">
@@ -74,6 +69,7 @@
           </div>
           <span class="updt" id="lupdt">—</span>
         </div>
+        <div class="board-featured" id="boardFeatured"></div>
         <div class="col-hdr">
           <div class="ch">Drink</div>
           <div class="ch">Price</div>
@@ -88,68 +84,60 @@
 
       <div class="rpanel">
         <div class="pview active" id="pv0">
-          <div class="news-masthead">
-            <div class="news-mast-left">
-              <span class="news-mast-title">Night Economy</span>
-              <span class="news-mast-section">Market Desk</span>
-            </div>
-            <span class="news-mast-time" id="mn-time">—</span>
-          </div>
-          <div class="news-live-row">
-            <span class="news-live-dot"></span>
-            <span class="news-live-text">Live Coverage</span>
-            <span class="news-live-div">·</span>
-            <span class="news-live-cats">Pricing · Volume · Sentiment</span>
-          </div>
-          <div class="news-hl" id="mn-hl">Market open — tracking prices live</div>
-          <div class="news-byline">By the Night Economy Bureau</div>
-          <div class="news-body" id="mn-sub">Floor activity building across all categories. Orders push prices up, inactivity pulls them down.</div>
-          <div class="news-data-grid">
-            <div class="news-data-cell">
-              <div class="news-data-lbl">Leading gain</div>
-              <div class="news-data-val up" id="mn-riser">—</div>
-            </div>
-            <div class="news-data-cell">
-              <div class="news-data-lbl">Under pressure</div>
-              <div class="news-data-val dn" id="mn-faller">—</div>
-            </div>
-            <div class="news-data-cell">
-              <div class="news-data-lbl">Sentiment</div>
-              <div class="news-data-val" id="mn-mood">—</div>
+          <div class="panel-tag tag-market">Breaking News</div>
+          <div class="bulletin-layout">
+            <div class="bulletin-stack">
+              <div class="story-a-kicker" id="storyA-kicker">Room signal</div>
+              <div class="story-a-headline" id="storyA-headline">Cocktails are setting the pace.</div>
+              <div class="story-a-copy" id="storyA-copy">A short read on where the room is leaning next.</div>
             </div>
           </div>
-          <div class="news-value-bar">
-            <span class="news-value-lbl">Best value now</span>
-            <span class="news-value-num dn" id="mn-value">—</span>
+          <div class="bulletin-strip">
+            <div class="bulletin-chip">
+              <span>Lead</span>
+              <strong id="storyA-board">Cocktails</strong>
+            </div>
+            <div class="bulletin-chip">
+              <span>Pressure</span>
+              <strong id="storyA-mood">Room heating up</strong>
+            </div>
+            <div class="bulletin-chip">
+              <span>Read</span>
+              <strong id="storyA-value">£—</strong>
+            </div>
           </div>
         </div>
         <div class="pview" id="pv1">
-          <div class="msp-header">
-            <div class="panel-tag tag-spotlight" style="margin-bottom:0">★ Now Trending</div>
-            <div class="msp-live"><span class="msp-live-dot"></span>Live</div>
-          </div>
-          <div class="mini-sp-name" id="mini-sp-name">—</div>
-          <div class="mini-sp-sub" id="mini-sp-sub">—</div>
-          <div class="mini-sp-price-row">
-            <span class="mini-sp-price" id="mini-sp-price">£—</span>
-            <span class="mini-sp-chg" id="mini-sp-chg">—</span>
-          </div>
-          <div class="msp-chart-wrap">
-            <div class="msp-chart-label">Price trend</div>
-            <div id="mini-sp-chart"></div>
-          </div>
-          <div class="msp-chart-meta" id="mini-sp-chart-meta"></div>
-          <div class="msp-vsbase-wrap">
-            <div class="msp-vsbase-hdr">
-              <span class="msp-vsbase-lbl">vs base price</span>
-              <span class="mini-sp-vs-val" id="mini-sp-vs-val">—</span>
+          <div class="panel-tag tag-spotlight">Live Pick</div>
+          <div class="pick-hero">
+            <div class="pick-stack">
+              <div class="spot-a-name" id="spotA-name">—</div>
+              <div class="spot-a-sub" id="spotA-sub">—</div>
             </div>
-            <div class="mini-sp-vs-track">
-              <div class="mini-sp-vs-fill" id="mini-sp-vs-fill"></div>
-              <div class="mini-sp-vs-center"></div>
+          </div>
+          <div class="spot-a-chart-wrap">
+            <div class="spot-a-chart-label">Session history</div>
+            <div id="spotA-chart"></div>
+          </div>
+          <div class="pick-metrics">
+            <div class="pick-metric">
+              <span>Move</span><strong id="spotA-change">—</strong>
             </div>
-            <div class="msp-vsbase-scale">
-              <span>Low</span><span>Base</span><span>High</span>
+            <div class="pick-metric">
+              <span>Low</span><strong id="spotA-low">—</strong>
+            </div>
+            <div class="pick-metric">
+              <span>High</span><strong id="spotA-high">—</strong>
+            </div>
+            <div class="pick-footer">
+              <div class="pick-footer-copy">
+                <span id="spotA-board">Cocktails</span>
+                <strong id="spotA-mood">Live pick</strong>
+              </div>
+              <div class="pick-footer-price">
+                <span>Price</span>
+                <strong id="spotA-price">£—</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -157,10 +145,9 @@
       </div>
     </div>
 
-    <div class="newsbar">
-      <div class="nb-tag" id="nb-tag">Breaking</div>
-      <div class="nb-track"><div class="nb-txt" id="nbtxt">Market open — prices moving live across all categories. Orders push prices up. Inactivity pulls them down.</div></div>
-      <div class="nb-src" id="nbsrc">Night Economy Bureau</div>
+    <div class="ticker ticker-bottom">
+      <div class="t-badge">Live prices</div>
+      <div class="t-track"><div class="t-inner" id="tinner"></div></div>
     </div>
   </div>
 
@@ -200,10 +187,10 @@
 </style>
 
 <script src="data.js?v=2"></script>
-<script src="shared.js?v=10"></script>
-<script src="pages.js?v=15"></script>
-<script src="home.js?v=4"></script>
-<script src="crash.js?v=2"></script>
+<script src="shared.js?v=11"></script>
+<script src="pages.js?v=17"></script>
+<script src="home.js?v=6"></script>
+<script src="crash.js?v=3"></script>
 
 <script>
 let currentMode = 'base';
@@ -265,9 +252,6 @@ function resetState() {
   // Reset prices to base
   rebuildMarketState();
 
-  // Reset news bar
-  document.getElementById('nb-tag').textContent = 'Breaking';
-  document.getElementById('nb-tag').style.color = '';
   document.getElementById('stext').textContent = 'Market open';
 }
 
