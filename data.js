@@ -24,6 +24,9 @@ const DRINKS = [
   { id: 'hugo', n: "Hugo",                     cat: 'spritz',        b: 12.00, p: 12.00, h: h(12.00), o: 0 },
   { id: 'fsp',  n: "Festive Spritz",           cat: 'spritz',        b: 12.00, p: 12.00, h: h(12.00), o: 0 },
 
+  // ── MOJITO ───────────────────────────────────────────────────────
+  { id: 'mjt',  n: "Classic Mojito",           cat: 'mojito',        b: 11.00, p: 11.00, h: h(11.00), o: 0 },
+
   // ── NEGRONI ───────────────────────────────────────────────────────
   { id: 'cneg', n: "Classic Negroni",          cat: 'negroni',       b: 12.00, p: 12.00, h: h(12.00), o: 0 },
   { id: 'sneg', n: "Sweeter Negroni",          cat: 'negroni',       b: 12.50, p: 12.50, h: h(12.50), o: 0 },
@@ -69,6 +72,8 @@ const ORDER_WEIGHTS = [
   0.07, 0.06, 0.05, 0.05,
   // spritz (4)
   0.07, 0.05, 0.04, 0.04,
+  // mojito (1)
+  0.05,
   // negroni (4)
   0.06, 0.05, 0.05, 0.04,
   // old-fashioned (3)
@@ -93,6 +98,7 @@ const CULTURAL_BLURBS = {
   csp:  'Campari + Prosecco + soda · the more bitter sibling · orange twist',
   hugo: 'St Germain + gin + elderflower + Prosecco · the Alpine classic',
   fsp:  'Manchester Marmalade + festive syrup + Prosecco · the seasonal special',
+  mjt:  'White rum + mint + lime + soda · the coolest read on the board',
   cneg: 'Tanqueray + Campari + Lillet Rose · the trinity · stir 20–25 seconds',
   sneg: "Warner's Rhubarb + Campari + rhubarb syrup · the sweeter side of bitter",
   skneg:'Laphroig + Amaro + Campari + lemon bitters · smoke meets bitter',
@@ -125,6 +131,6 @@ const CULTURAL_BLURBS = {
 const BOARD_VIEWS = [
   { label: 'COCKTAILS',        ids: ['cbm','pca','cmar','mmar','cneg','skneg','cof','oor'] },
   { label: 'SIGNATURES',       ids: ['tt','t75','mny','cfr','pa','cr','chc','lwj'] },
-  { label: 'ESPRESSO · SPRITZ',ids: ['cem','flc','tfo','asp','csp','hugo','cmm','ktf'] },
+  { label: 'ESPRESSO · SPRITZ',ids: ['cem','flc','tfo','asp','csp','hugo','mjt','cmm','ktf'] },
   { label: 'ZERO · MORE',      ids: ['wb','hbg','ngr','ans','wbp','smar','tmar','psa'] },
 ];

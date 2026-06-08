@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<link rel="stylesheet" href="styles.css?v=27">
+<link rel="stylesheet" href="styles.css?v=29">
 <style>
 .menu-toggle {
   position: fixed;
@@ -84,6 +84,7 @@
 
       <div class="rpanel">
         <div class="pview active" id="pv0">
+          <div class="bulletin-art" aria-hidden="true"></div>
           <div class="panel-tag tag-market">Breaking News</div>
           <div class="bulletin-layout">
             <div class="bulletin-stack">
@@ -107,41 +108,6 @@
             </div>
           </div>
         </div>
-        <div class="pview" id="pv1">
-          <div class="panel-tag tag-spotlight">Live Pick</div>
-          <div class="pick-hero">
-            <div class="pick-stack">
-              <div class="spot-a-name" id="spotA-name">—</div>
-              <div class="spot-a-sub" id="spotA-sub">—</div>
-            </div>
-          </div>
-          <div class="spot-a-chart-wrap">
-            <div class="spot-a-chart-label">Session history</div>
-            <div id="spotA-chart"></div>
-          </div>
-          <div class="pick-metrics">
-            <div class="pick-metric">
-              <span>Move</span><strong id="spotA-change">—</strong>
-            </div>
-            <div class="pick-metric">
-              <span>Low</span><strong id="spotA-low">—</strong>
-            </div>
-            <div class="pick-metric">
-              <span>High</span><strong id="spotA-high">—</strong>
-            </div>
-            <div class="pick-footer">
-              <div class="pick-footer-copy">
-                <span id="spotA-board">Cocktails</span>
-                <strong id="spotA-mood">Live pick</strong>
-              </div>
-              <div class="pick-footer-price">
-                <span>Price</span>
-                <strong id="spotA-price">£—</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="panel-dots"><div class="pdot active" id="dot0"></div><div class="pdot" id="dot1"></div></div>
       </div>
     </div>
 
@@ -186,10 +152,10 @@
 @keyframes shake{0%{transform:translate(0,0)}10%{transform:translate(-3px,1px)}20%{transform:translate(3px,-2px)}30%{transform:translate(-4px,2px)}40%{transform:translate(4px,-1px)}50%{transform:translate(-2px,3px)}60%{transform:translate(3px,-2px)}70%{transform:translate(-3px,1px)}80%{transform:translate(2px,-1px)}90%{transform:translate(-1px,2px)}100%{transform:translate(0,0)}}
 </style>
 
-<script src="data.js?v=2"></script>
+<script src="data.js?v=3"></script>
 <script src="shared.js?v=11"></script>
 <script src="pages.js?v=17"></script>
-<script src="home.js?v=6"></script>
+<script src="home.js?v=7"></script>
 <script src="crash.js?v=3"></script>
 
 <script>
@@ -312,19 +278,11 @@ function initMode(mode) {
 
     /* ──────── BASE HOME ──────── */
     case 'base':
-      // Force panel 0 active immediately — the app always starts on the market desk
-      [0,1].forEach(i => {
-        document.getElementById(`pv${i}`)?.classList.remove('active');
-        document.getElementById(`dot${i}`)?.classList.remove('active');
-      });
-      currentPanel = 0;
       document.getElementById('pv0').classList.add('active');
-      document.getElementById('dot0').classList.add('active');
       updateMarketPanel();
-      updateMiniSpotlight();
       t(() => startCrawl('Prices move live — order any drink to lock in a price'), 400);
       decayInterval = setInterval(applyDecay, 2500);
-      panelInterval = setInterval(() => switchPanel(currentPanel + 1), 9000);
+      panelInterval = setInterval(updateMarketPanel, 9000);
       boardInterval = setInterval(rotateBoardView, 10000);
       scheduleOrders([1800, 5800]);
       break;
@@ -333,7 +291,7 @@ function initMode(mode) {
     case 'crash': {
       t(() => startCrawl('Market open — prices moving live. Monitoring for unusual activity...'), 400);
       decayInterval = setInterval(applyDecay, 2500);
-      panelInterval = setInterval(() => switchPanel(currentPanel + 1), 9000);
+      panelInterval = setInterval(updateMarketPanel, 9000);
       scheduleOrders([1200, 4000]);
 
       // Build up some orders first, then trigger crash after 5s
@@ -357,11 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('crashBtn').addEventListener('click', () => {
     initMode('crash');
-  });
-
-  // Panel dots click handlers
-  document.querySelectorAll('.pdot').forEach((dot, idx) => {
-    dot.addEventListener('click', () => switchPanel(idx));
   });
 
   // Board dots click handlers

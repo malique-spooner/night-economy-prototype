@@ -18,6 +18,54 @@ function applyDecay() {
    ════════════════════════════════════════════════════════════════════ */
 
 let currentBoardView = 0;
+let storySlideIndex = 0;
+
+const DRINK_STORY_SLIDES = [
+  {
+    id: 'cof',
+    art: 'https://commons.wikimedia.org/wiki/Special:FilePath/Oldfashioned-cocktail.png',
+    kicker: 'Classic read',
+    headline: 'Old Fashioned keeps the room grounded.',
+    copy: 'Bourbon-led, slow-moving, and always dependable when guests want something clear, warm, and quietly premium.',
+    mood: 'Steady demand',
+  },
+  {
+    id: 'cmar',
+    art: 'https://commons.wikimedia.org/wiki/Special:FilePath/Margarita.jpg',
+    kicker: 'Salt-rim signal',
+    headline: 'Margarita is the bright move on the board.',
+    copy: 'Tequila, citrus, and a clean snap of salt keep the Margarita reading as the quickest, loudest order in the room.',
+    mood: 'Value opening',
+  },
+  {
+    id: 'cbm',
+    art: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bloody_Mary_Coctail_with_celery_stalk_-_Evan_Swigart.jpg',
+    kicker: 'Brunch anchor',
+    headline: 'Bloody Mary still owns the early shift.',
+    copy: 'Savory, spicy, and built for long tables, the Bloody Mary keeps pulling attention whenever the room turns to daytime energy.',
+    mood: 'Pressure building',
+  },
+  {
+    id: 'mjt',
+    art: 'https://commons.wikimedia.org/wiki/Special:FilePath/Cocktail_Mojito.jpg',
+    kicker: 'Fresh lift',
+    headline: 'Mojito brings the cleanest lift to the set.',
+    copy: 'Mint, lime, and soda keep the Mojito feeling light on its feet, which makes it a strong read for warmer, faster-moving service.',
+    mood: 'Cool momentum',
+  },
+  {
+    id: 'cneg',
+    art: 'https://commons.wikimedia.org/wiki/Special:FilePath/Negroni_on_the_Rocks.jpg',
+    kicker: 'Bitter close',
+    headline: 'Negroni finishes the night with certainty.',
+    copy: 'Dark, dry, and unmistakably evening-led, the Negroni keeps the late read disciplined and sharp.',
+    mood: 'Late demand',
+  },
+];
+
+function getDrinkById(id) {
+  return D.find(d => d.id === id) || null;
+}
 
 function buildBoard(viewIdx) {
   if (viewIdx !== undefined) currentBoardView = viewIdx;
@@ -165,14 +213,14 @@ function updateMarketPanel() {
   const drinks = getVisibleBoardDrinks();
   if (!drinks.length) return;
 
-  const mover = getTopMover(drinks) || drinks[0];
-  const best = getBestValue(drinks) || drinks[0];
+  const story = DRINK_STORY_SLIDES[storySlideIndex % DRINK_STORY_SLIDES.length];
+  storySlideIndex = (storySlideIndex + 1) % DRINK_STORY_SLIDES.length;
+  const storyDrink = getDrinkById(story.id) || drinks[0];
   const upCount = drinks.filter(d => d.p > d.b).length;
   const downCount = drinks.filter(d => d.p < d.b).length;
   const mood = upCount >= downCount ? 'Room heating up' : 'Value opening';
-  const moverChange = ((mover.p - mover.b) / mover.b * 100);
-  const bestChange = ((best.p - best.b) / best.b * 100);
   const now = new Date();
+  const panel = document.getElementById('pv0');
 
   const kickerEl = document.getElementById('storyA-kicker');
   const headlineEl = document.getElementById('storyA-headline');
@@ -181,18 +229,19 @@ function updateMarketPanel() {
   const moodEl = document.getElementById('storyA-mood');
   const valueEl = document.getElementById('storyA-value');
 
-  if (kickerEl) kickerEl.textContent = 'Room signal';
+  if (panel && story.art) {
+    panel.style.setProperty('--pv0-art', `url("${story.art}")`);
+  }
+  if (kickerEl) kickerEl.textContent = story.kicker;
   if (headlineEl) {
-    headlineEl.textContent = mover.p >= mover.b
-      ? `${mover.n} is setting the pace.`
-      : `${mover.n} is cooling the room.`;
+    headlineEl.textContent = story.headline;
   }
   if (copyEl) {
-    copyEl.textContent = `${mover.n} is ${moverChange >= 0 ? '+' : ''}${moverChange.toFixed(1)}% against base, while ${best.n} is the cleanest value on the board at ${formatMoney(best.p)}.`;
+    copyEl.textContent = story.copy;
   }
-  if (boardEl) boardEl.textContent = mover.n;
-  if (moodEl) moodEl.textContent = mover.p >= mover.b ? mood : 'Cooling off';
-  if (valueEl) valueEl.textContent = `${formatMoney(best.p)}${bestChange > 0 ? ' ▲' : bestChange < 0 ? ' ▼' : ''}`;
+  if (boardEl) boardEl.textContent = storyDrink.n;
+  if (moodEl) moodEl.textContent = story.mood || mood;
+  if (valueEl) valueEl.textContent = formatMoney(storyDrink.p);
 
   const timeEl = document.getElementById('lupdt');
   if (timeEl) timeEl.textContent = `Updated ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
