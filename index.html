@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<link rel="stylesheet" href="styles.css?v=29">
+<link rel="stylesheet" href="styles.css?v=32">
 <style>
 .menu-toggle {
   position: fixed;
@@ -93,19 +93,9 @@
               <div class="story-a-copy" id="storyA-copy">A short read on where the room is leaning next.</div>
             </div>
           </div>
-          <div class="bulletin-strip">
-            <div class="bulletin-chip">
-              <span>Lead</span>
-              <strong id="storyA-board">Cocktails</strong>
-            </div>
-            <div class="bulletin-chip">
-              <span>Pressure</span>
-              <strong id="storyA-mood">Room heating up</strong>
-            </div>
-            <div class="bulletin-chip">
-              <span>Read</span>
-              <strong id="storyA-value">£—</strong>
-            </div>
+          <div class="bulletin-price">
+            <span>Current price</span>
+            <strong id="storyA-value">£—</strong>
           </div>
         </div>
       </div>
@@ -127,11 +117,6 @@
       <div class="ev-pre" id="epre">⚠ Market Crash</div>
       <div class="ev-hl" id="ehl">CRASH</div>
       <div class="ev-sub" id="esub">Prices collapsing — buy window now open</div>
-      <div class="cd-row" id="cd-row">
-        <div class="cd-lbl">Buy window</div>
-        <div class="cd-track"><div class="cd-fill" id="cd-fill"></div></div>
-        <div class="cd-num" id="cd-num">3:00</div>
-      </div>
     </div>
   </div>
 
@@ -152,11 +137,11 @@
 @keyframes shake{0%{transform:translate(0,0)}10%{transform:translate(-3px,1px)}20%{transform:translate(3px,-2px)}30%{transform:translate(-4px,2px)}40%{transform:translate(4px,-1px)}50%{transform:translate(-2px,3px)}60%{transform:translate(3px,-2px)}70%{transform:translate(-3px,1px)}80%{transform:translate(2px,-1px)}90%{transform:translate(-1px,2px)}100%{transform:translate(0,0)}}
 </style>
 
-<script src="data.js?v=3"></script>
-<script src="shared.js?v=11"></script>
+<script src="data.js?v=4"></script>
+<script src="shared.js?v=12"></script>
 <script src="pages.js?v=17"></script>
-<script src="home.js?v=7"></script>
-<script src="crash.js?v=3"></script>
+<script src="home.js?v=10"></script>
+<script src="crash.js?v=6"></script>
 
 <script>
 let currentMode = 'base';
@@ -171,6 +156,10 @@ function resetState() {
   if (boardInterval) clearInterval(boardInterval);
   if (orderSchedule) clearTimeout(orderSchedule);
   if (demoCycleTimeout) clearTimeout(demoCycleTimeout);
+  if (typeof buyWindowTimeout !== 'undefined' && buyWindowTimeout) {
+    clearTimeout(buyWindowTimeout);
+    buyWindowTimeout = null;
+  }
   activeTimers.forEach(t => clearTimeout(t));
   activeTimers = [];
   crashActive = false;
@@ -197,7 +186,7 @@ function resetState() {
   pill.classList.remove('crash');
 
   // Reset event card elements
-  ['evc', 'epre', 'ehl', 'esub', 'cd-row'].forEach(id => {
+  ['evc', 'epre', 'ehl', 'esub'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.style.transition = 'none';

@@ -345,6 +345,18 @@ let cdInt = null;
 let crawlTo = null;
 let threeMode = 'normal';
 let renderer, camera, scene;
+let crashCategoryIndex = 0;
+
+function getNextCrashCategory() {
+  if (!DEFAULT_CATEGORIES.length) return 'signature';
+  const cat = DEFAULT_CATEGORIES[crashCategoryIndex % DEFAULT_CATEGORIES.length];
+  crashCategoryIndex = (crashCategoryIndex + 1) % DEFAULT_CATEGORIES.length;
+  return cat;
+}
+
+function formatMarketCategory(cat) {
+  return (MARKET_SETTINGS.categories?.[cat]?.label || cat || '').replace(/-/g, ' ');
+}
 
 /* ════════════════════════════════════════════════════════════════════
    DOM UTILITIES
@@ -718,16 +730,19 @@ function updateClock() {
 
 function switchPanel(idx) {
   if (crashActive) return;
-
-  document.getElementById(`pv${currentPanel}`).classList.remove('active');
-  document.getElementById(`dot${currentPanel}`).classList.remove('active');
+  const prevPanel = document.getElementById(`pv${currentPanel}`);
+  const prevDot = document.getElementById(`dot${currentPanel}`);
+  if (prevPanel) prevPanel.classList.remove('active');
+  if (prevDot) prevDot.classList.remove('active');
 
   currentPanel = idx % 2;
   const updaters = [updateMarketPanel, updateMiniSpotlight];
-  updaters[currentPanel]();
+  if (typeof updaters[currentPanel] === 'function') updaters[currentPanel]();
 
-  document.getElementById(`pv${currentPanel}`).classList.add('active');
-  document.getElementById(`dot${currentPanel}`).classList.add('active');
+  const nextPanel = document.getElementById(`pv${currentPanel}`);
+  const nextDot = document.getElementById(`dot${currentPanel}`);
+  if (nextPanel) nextPanel.classList.add('active');
+  if (nextDot) nextDot.classList.add('active');
 }
 
 /* ════════════════════════════════════════════════════════════════════

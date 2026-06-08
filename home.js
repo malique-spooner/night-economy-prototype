@@ -216,6 +216,7 @@ function updateMarketPanel() {
   const story = DRINK_STORY_SLIDES[storySlideIndex % DRINK_STORY_SLIDES.length];
   storySlideIndex = (storySlideIndex + 1) % DRINK_STORY_SLIDES.length;
   const storyDrink = getDrinkById(story.id) || drinks[0];
+  const timeline = (storyDrink.timeline && storyDrink.timeline.length ? storyDrink.timeline : buildSyntheticTimeline(storyDrink)).slice(-43);
   const upCount = drinks.filter(d => d.p > d.b).length;
   const downCount = drinks.filter(d => d.p < d.b).length;
   const mood = upCount >= downCount ? 'Room heating up' : 'Value opening';
@@ -225,8 +226,6 @@ function updateMarketPanel() {
   const kickerEl = document.getElementById('storyA-kicker');
   const headlineEl = document.getElementById('storyA-headline');
   const copyEl = document.getElementById('storyA-copy');
-  const boardEl = document.getElementById('storyA-board');
-  const moodEl = document.getElementById('storyA-mood');
   const valueEl = document.getElementById('storyA-value');
 
   if (panel && story.art) {
@@ -239,8 +238,6 @@ function updateMarketPanel() {
   if (copyEl) {
     copyEl.textContent = story.copy;
   }
-  if (boardEl) boardEl.textContent = storyDrink.n;
-  if (moodEl) moodEl.textContent = story.mood || mood;
   if (valueEl) valueEl.textContent = formatMoney(storyDrink.p);
 
   const timeEl = document.getElementById('lupdt');

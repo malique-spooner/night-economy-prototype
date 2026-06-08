@@ -2,21 +2,89 @@
    CRASH / SURGE EVENT SEQUENCE
    ════════════════════════════════════════════════════════════════════ */
 
+let activeCrashCategory = null;
+let activeCrashCategoryLabel = '';
+let activeCrashDrinks = [];
+let buyWindowTimeout = null;
+
+function getCrashDrinksForCategory(cat) {
+  return D.filter(d => d.cat === cat && !d.soldOut);
+}
+
+function pumpCrashCategory(drinks, deltaMin = 0.04, deltaMax = 0.09) {
+  drinks.forEach(d => {
+    const prev = d.p;
+    const mult = 1 + deltaMin + Math.random() * (deltaMax - deltaMin);
+    d.p = clampPrice(d, d.p * mult);
+    d.h.push(d.p);
+    if (d.h.length > 12) d.h.shift();
+    updateRowDisplay(d);
+    const pEl = document.getElementById(`p${d.id}`);
+    if (pEl) {
+      pEl.textContent = '£' + d.p.toFixed(2);
+      pEl.className = 'dprice up';
+    }
+    if (d.p > prev) {
+      const row = document.getElementById(`r${d.id}`);
+      if (row) {
+        row.classList.add('glow-up', 'pulse');
+        setTimeout(() => row.classList.remove('glow-up', 'pulse'), 900);
+      }
+    }
+  });
+}
+
+function crashCategoryHard(drinks) {
+  drinks.forEach(d => {
+    const prev = d.p;
+    d.p = clampPrice(d, d.b * (0.48 + Math.random() * 0.14));
+    d.h.push(d.p);
+    if (d.h.length > 12) d.h.shift();
+    const pEl = document.getElementById(`p${d.id}`);
+    if (pEl) {
+      pEl.textContent = '£' + d.p.toFixed(2);
+      pEl.className = 'dprice dn';
+      pEl.classList.remove('crashing');
+      void pEl.offsetWidth;
+      pEl.classList.add('crashing');
+    }
+    updateRowDisplay(d);
+    insertTradeRow(d.id, false, prev, 'CRASH');
+  });
+}
+
 function startCrash() {
   if (crashActive) return;
   crashActive = true;
+  activeCrashCategory = typeof getNextCrashCategory === 'function'
+    ? getNextCrashCategory()
+    : (DEFAULT_CATEGORIES[0] || 'signature');
+  let attempts = 0;
+  while (attempts < Math.max(1, DEFAULT_CATEGORIES.length) && !getCrashDrinksForCategory(activeCrashCategory).length) {
+    activeCrashCategory = typeof getNextCrashCategory === 'function'
+      ? getNextCrashCategory()
+      : (DEFAULT_CATEGORIES[(attempts + 1) % Math.max(1, DEFAULT_CATEGORIES.length)] || 'signature');
+    attempts += 1;
+  }
+  activeCrashCategoryLabel = typeof formatMarketCategory === 'function'
+    ? formatMarketCategory(activeCrashCategory)
+    : activeCrashCategory.replace('-', ' ');
+  activeCrashDrinks = getCrashDrinksForCategory(activeCrashCategory);
+  const crashPeers = D.filter(d => d.cat !== activeCrashCategory && !d.soldOut);
+  const nbTag = document.getElementById('nb-tag');
 
   /* Stage 1 — Warning (0–8s) */
   threeMode = 'warning';
   document.getElementById('warnBanner').classList.add('show');
-  startCrawl('⚠ Unusual market activity detected — monitoring price volatility across all categories', 'rgba(200,160,0,0.85)');
-  document.getElementById('nb-tag').style.color = '#c9aa52';
+  startCrawl(`⚠ ${activeCrashCategoryLabel.toUpperCase()} heating up — monitoring price volatility in that category`, 'rgba(200,160,0,0.85)');
+  if (nbTag) nbTag.style.color = '#c9aa52';
 
-  // Prices start getting jumpy
+  // Prices pump first in the category that is about to crash
   let warnJitter = setInterval(() => {
-    D.forEach(d => {
-      const drift = -(Math.random() * 0.15 + 0.05);
-      d.p = clampPrice(d, d.p + drift);
+    pumpCrashCategory(activeCrashDrinks, 0.03, 0.08);
+    crashPeers.forEach(d => {
+      const drift = d.p > d.b ? 0.008 : 0.003;
+      d.p = clampPrice(d, d.p * (1 + drift));
       d.h.push(d.p);
       if (d.h.length > 12) d.h.shift();
       updateRowDisplay(d);
@@ -25,9 +93,9 @@ function startCrash() {
   }, 600);
 
   setTimeout(() => {
-    startCrawl('⚠ CRASH IMMINENT — prices entering freefall across multiple categories', 'rgba(255,100,100,0.9)');
-    document.getElementById('warnText').textContent = 'Market instability escalating';
-    document.getElementById('warnSub').textContent = '· Price correction imminent across all categories';
+    startCrawl(`⚠ ${activeCrashCategoryLabel.toUpperCase()} overextended — correction imminent`, 'rgba(255,100,100,0.9)');
+    document.getElementById('warnText').textContent = `${activeCrashCategoryLabel} overheating`;
+    document.getElementById('warnSub').textContent = `· Category-specific correction building now`;
   }, 5000);
 
   /* Stage 2 — Shake (8–13s) */
@@ -50,8 +118,7 @@ function startCrash() {
         ui.style.animation = 'none';
         void ui.offsetWidth;
         ui.style.animation = 'shake 0.45s ease-in-out';
-        // Crash all rows
-        D.forEach(d => {
+        activeCrashDrinks.forEach(d => {
           const row = document.getElementById(`r${d.id}`);
           if (row) {
             row.classList.remove('crash-hit');
@@ -62,28 +129,24 @@ function startCrash() {
       }, delay);
     });
 
-    startCrawl('CRASH — prices collapsing across all categories — buy window opening now', 'rgba(255,82,82,0.95)');
+    startCrawl(`CRASH — ${activeCrashCategoryLabel.toUpperCase()} collapsing — buy window opening now`, 'rgba(255,82,82,0.95)');
   }, 8000);
 
   /* Stage 3 — Full crash (13s) */
   setTimeout(() => {
     threeMode = 'crash';
-    // Collapse all prices
-    D.forEach(d => {
+    // Only the target category crashes hard
+    crashCategoryHard(activeCrashDrinks);
+    crashPeers.forEach(d => {
       const prev = d.p;
-      d.p = clampPrice(d, d.b * (0.48 + Math.random() * 0.12));
+      d.p = clampPrice(d, d.p * (0.98 + Math.random() * 0.03));
       d.h.push(d.p);
       if (d.h.length > 12) d.h.shift();
-      const pEl = document.getElementById(`p${d.id}`);
-      if (pEl) {
-        pEl.textContent = '£' + d.p.toFixed(2);
-        pEl.className = 'dprice dn';
-        pEl.classList.remove('crashing');
-        void pEl.offsetWidth;
-        pEl.classList.add('crashing');
-      }
       updateRowDisplay(d);
-      insertTradeRow(d.id, false, prev, 'CRASH');
+      if (d.p > prev) {
+        const pEl = document.getElementById(`p${d.id}`);
+        if (pEl) pEl.className = 'dprice up';
+      }
     });
     renderTicker();
     document.getElementById('warnBanner').classList.remove('show');
@@ -128,43 +191,26 @@ function startCrash() {
       document.getElementById('esub').style.transform = 'translateY(0)';
     }, 760);
 
-    const cdRow = document.getElementById('cd-row');
-    if (cdRow) go(cdRow, { opacity: '1' }, 400, 1000);
   }, 13000);
 
   /* Stage 4 — Buy window (18s) */
   setTimeout(() => {
     threeMode = 'buywindow';
-    startCountdown(180);
-    document.getElementById('nb-tag').style.color = '#ff5252';
-    startCrawl('BUY WINDOW OPEN — all prices at session lows — window closes in 3 minutes', 'rgba(255,82,82,0.9)');
+    if (nbTag) nbTag.style.color = '#ff5252';
+    document.getElementById('esub').textContent = `${activeCrashCategoryLabel} at session lows · buy window open`;
+    startCrawl(`BUY WINDOW OPEN — ${activeCrashCategoryLabel.toUpperCase()} at session lows`, 'rgba(255,82,82,0.9)');
+    clearTimeout(buyWindowTimeout);
+    buyWindowTimeout = setTimeout(endCrash, 10000);
   }, 18000);
 }
 
-function startCountdown(secs) {
-  clearInterval(cdInt);
-  let rem = secs;
-  const fill = document.getElementById('cd-fill');
-  const num = document.getElementById('cd-num');
-
-  fill.style.transition = 'none';
-  fill.style.width = '100%';
-
-  num.textContent = fmt(rem);
-  cdInt = setInterval(() => {
-    rem--;
-    fill.style.transition = 'width 1s linear';
-    fill.style.width = (rem / secs * 100) + '%';
-    num.textContent = fmt(Math.max(0, rem));
-    if (rem <= 0) {
-      clearInterval(cdInt);
-      setTimeout(endCrash, 1800);
-    }
-  }, 1000);
-}
-
 function endCrash() {
+  clearTimeout(buyWindowTimeout);
+  buyWindowTimeout = null;
   crashActive = false;
+  activeCrashCategory = null;
+  activeCrashCategoryLabel = '';
+  activeCrashDrinks = [];
   const ui = document.getElementById('ui');
   ui.classList.remove('dim');
   ui.style.animation = 'none';
@@ -181,7 +227,8 @@ function endCrash() {
   const pill = document.getElementById('pill');
   pill.classList.remove('crash');
   document.getElementById('stext').textContent = 'Market open';
-  document.getElementById('nb-tag').style.color = '#c9aa52';
+  const nbTag = document.getElementById('nb-tag');
+  if (nbTag) nbTag.style.color = '#c9aa52';
 
   threeMode = 'normal';
   resetThree();
@@ -190,7 +237,7 @@ function endCrash() {
     layer.style.display = 'none';
     const evc = document.getElementById('evc');
     evc.classList.remove('show');
-    ['evc', 'epre', 'ehl', 'esub', 'cd-row'].forEach(id => {
+    ['evc', 'epre', 'ehl', 'esub'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.style.transition = 'none';
