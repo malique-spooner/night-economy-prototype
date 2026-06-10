@@ -108,7 +108,7 @@ function getAppView() {
   const params = new URLSearchParams(window.location.search);
   const requested = params.get('view');
   const resolved = APP_VIEW_ALIASES[requested] || requested;
-  return APP_VIEW_NAMES[resolved] ? resolved : 'tv';
+  return APP_VIEW_NAMES[resolved] ? resolved : 'site';
 }
 
 function escapeHtml(value) {
@@ -448,6 +448,11 @@ function injectPageShell() {
 
 function setActiveAppView(view) {
   document.body.dataset.appView = view;
+  document.documentElement.style.overflow = view === 'site' ? 'auto' : 'hidden';
+  document.documentElement.style.height = view === 'site' ? 'auto' : '100%';
+  document.body.style.overflow = view === 'site' ? 'auto' : 'hidden';
+  document.body.style.height = view === 'site' ? 'auto' : '100%';
+  document.body.style.minHeight = view === 'site' ? '100vh' : '100%';
   document.querySelectorAll('.page-chip').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.view === view);
   });
@@ -833,6 +838,51 @@ function renderMobileMenuCards(items) {
       <div class="mobile-menu-card-note">${escapeHtml(item.note)}</div>
     </article>
   `).join('');
+}
+
+function getActiveScrollablePanel() {
+  const view = getAppView();
+  if (view !== 'site' && view !== 'mobile') return null;
+  return document.getElementById(`${view}View`);
+}
+
+function routePanelScroll(event) {
+  const panel = getActiveScrollablePanel();
+  if (!panel) return;
+
+  const delta = event.deltaY || 0;
+  if (!delta) return;
+
+  event.preventDefault();
+  panel.scrollTop += delta;
+}
+
+function handlePanelArrowScroll(event) {
+  const view = getAppView();
+  const panel = getActiveScrollablePanel();
+  if (!panel) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;
+
+  const step = Math.max(120, Math.round(window.innerHeight * 0.18));
+  let handled = true;
+  const pageStep = Math.round(window.innerHeight * 0.8);
+  if (view === 'site') {
+    if (event.key === 'ArrowDown') window.scrollBy({ top: step, left: 0, behavior: 'auto' });
+    else if (event.key === 'ArrowUp') window.scrollBy({ top: -step, left: 0, behavior: 'auto' });
+    else if (event.key === 'PageDown' || event.key === ' ') window.scrollBy({ top: pageStep, left: 0, behavior: 'auto' });
+    else if (event.key === 'PageUp') window.scrollBy({ top: -pageStep, left: 0, behavior: 'auto' });
+    else if (event.key === 'Home') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    else if (event.key === 'End') window.scrollTo({ top: document.documentElement.scrollHeight, left: 0, behavior: 'auto' });
+    else handled = false;
+  } else if (event.key === 'ArrowDown') panel.scrollTop += step;
+  else if (event.key === 'ArrowUp') panel.scrollTop -= step;
+  else if (event.key === 'PageDown' || event.key === ' ') panel.scrollTop += pageStep;
+  else if (event.key === 'PageUp') panel.scrollTop -= pageStep;
+  else if (event.key === 'Home') panel.scrollTop = 0;
+  else if (event.key === 'End') panel.scrollTop = panel.scrollHeight;
+  else handled = false;
+
+  if (handled) event.preventDefault();
 }
 
 function renderManagerHistory() {
@@ -2299,6 +2349,10 @@ function initAppPages() {
         PAGE_STATE.employee.selectedCat = 'all';
         renderPortalView();
       }
+    }
+
+    if (viewNow === 'site' || viewNow === 'mobile') {
+      handlePanelArrowScroll(event);
     }
   });
 

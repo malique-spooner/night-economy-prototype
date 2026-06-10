@@ -11,6 +11,19 @@ function getCrashDrinksForCategory(cat) {
   return D.filter(d => d.cat === cat && !d.soldOut);
 }
 
+function getCrashGroupIds() {
+  if (typeof BOARD_VIEWS !== 'undefined' && typeof currentBoardView !== 'undefined') {
+    const view = BOARD_VIEWS[currentBoardView];
+    if (view && Array.isArray(view.ids)) return view.ids;
+  }
+  return [];
+}
+
+function getCrashDrinksForGroup() {
+  const ids = new Set(getCrashGroupIds());
+  return D.filter(d => ids.has(d.id) && !d.soldOut);
+}
+
 function pumpCrashCategory(drinks, deltaMin = 0.04, deltaMax = 0.09) {
   drinks.forEach(d => {
     const prev = d.p;
@@ -53,6 +66,20 @@ function crashCategoryHard(drinks) {
   });
 }
 
+function getCrashGroupLabel() {
+  if (typeof BOARD_VIEWS !== 'undefined' && typeof currentBoardView !== 'undefined') {
+    const view = BOARD_VIEWS[currentBoardView];
+    if (view && view.label) {
+      return view.label
+        .toLowerCase()
+        .split(' · ')
+        .map(part => part.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '))
+        .join(' · ');
+    }
+  }
+  return 'Cocktails';
+}
+
 function startCrash() {
   if (crashActive) return;
   crashActive = true;
@@ -69,14 +96,18 @@ function startCrash() {
   activeCrashCategoryLabel = typeof formatMarketCategory === 'function'
     ? formatMarketCategory(activeCrashCategory)
     : activeCrashCategory.replace('-', ' ');
-  activeCrashDrinks = getCrashDrinksForCategory(activeCrashCategory);
-  const crashPeers = D.filter(d => d.cat !== activeCrashCategory && !d.soldOut);
+  activeCrashDrinks = getCrashDrinksForGroup();
+  const crashGroupIds = new Set(getCrashGroupIds());
+  const crashPeers = D.filter(d => !crashGroupIds.has(d.id) && !d.soldOut);
   const nbTag = document.getElementById('nb-tag');
+  const crashGroupLabel = getCrashGroupLabel();
 
   /* Stage 1 — Warning (0–8s) */
   threeMode = 'warning';
   document.getElementById('warnBanner').classList.add('show');
-  startCrawl(`⚠ ${activeCrashCategoryLabel.toUpperCase()} heating up — monitoring price volatility in that category`, 'rgba(200,160,0,0.85)');
+  document.getElementById('warnText').textContent = 'Crash';
+  document.getElementById('warnSub').textContent = `· ${crashGroupLabel} crash`;
+  startCrawl(`⚠ CRASH`, 'rgba(200,160,0,0.85)');
   if (nbTag) nbTag.style.color = '#c9aa52';
 
   // Prices pump first in the category that is about to crash
@@ -93,9 +124,11 @@ function startCrash() {
   }, 600);
 
   setTimeout(() => {
-    startCrawl(`⚠ ${activeCrashCategoryLabel.toUpperCase()} overextended — correction imminent`, 'rgba(255,100,100,0.9)');
-    document.getElementById('warnText').textContent = `${activeCrashCategoryLabel} overheating`;
-    document.getElementById('warnSub').textContent = `· Category-specific correction building now`;
+    const warnText = document.getElementById('warnText');
+    const warnSub = document.getElementById('warnSub');
+    startCrawl(`⚠ CRASH`, 'rgba(255,100,100,0.9)');
+    if (warnText) warnText.textContent = 'Crash';
+    if (warnSub) warnSub.textContent = `· ${crashGroupLabel} crash`;
   }, 5000);
 
   /* Stage 2 — Shake (8–13s) */
@@ -103,7 +136,7 @@ function startCrash() {
     clearInterval(warnJitter);
     const pill = document.getElementById('pill');
     pill.classList.add('crash');
-    document.getElementById('stext').textContent = 'Crash event';
+    document.getElementById('stext').textContent = 'Crash';
     const wash = document.getElementById('wash');
     wash.style.transition = 'none';
     wash.style.opacity = '0';
@@ -129,7 +162,7 @@ function startCrash() {
       }, delay);
     });
 
-    startCrawl(`CRASH — ${activeCrashCategoryLabel.toUpperCase()} collapsing — buy window opening now`, 'rgba(255,82,82,0.95)');
+    startCrawl(`CRASH — ${crashGroupLabel.toUpperCase()}`, 'rgba(255,82,82,0.95)');
   }, 8000);
 
   /* Stage 3 — Full crash (13s) */
@@ -177,6 +210,14 @@ function startCrash() {
     const evc = document.getElementById('evc');
     evc.classList.add('show');
     go(evc, { opacity: '1', transform: 'translateY(0) scale(1)' }, 620, 300);
+    document.getElementById('epre').textContent = 'Market Crash';
+    document.getElementById('ehl').textContent = `${crashGroupLabel} crash`;
+    const esub = document.getElementById('esub');
+    if (esub) {
+      esub.textContent = `${crashGroupLabel.toUpperCase()} UNDER PRESSURE`;
+      esub.style.display = '';
+      go(esub, { opacity: '1', transform: 'translateY(0)' }, 520, 620);
+    }
     go(document.getElementById('epre'), { opacity: '1', transform: 'translateY(0)' }, 480, 460);
 
     setTimeout(() => {
@@ -185,23 +226,14 @@ function startCrash() {
       document.getElementById('ehl').style.transform = 'translateY(0)';
     }, 580);
 
-    setTimeout(() => {
-      document.getElementById('esub').style.transition = 'all 520ms cubic-bezier(0.16,1,0.3,1)';
-      document.getElementById('esub').style.opacity = '1';
-      document.getElementById('esub').style.transform = 'translateY(0)';
-    }, 760);
-
   }, 13000);
 
-  /* Stage 4 — Buy window (18s) */
   setTimeout(() => {
-    threeMode = 'buywindow';
+    threeMode = 'crash';
     if (nbTag) nbTag.style.color = '#ff5252';
-    document.getElementById('esub').textContent = `${activeCrashCategoryLabel} at session lows · buy window open`;
-    startCrawl(`BUY WINDOW OPEN — ${activeCrashCategoryLabel.toUpperCase()} at session lows`, 'rgba(255,82,82,0.9)');
     clearTimeout(buyWindowTimeout);
     buyWindowTimeout = setTimeout(endCrash, 10000);
-  }, 18000);
+  }, 13000);
 }
 
 function endCrash() {
@@ -242,6 +274,7 @@ function endCrash() {
       if (!el) return;
       el.style.transition = 'none';
       el.style.opacity = '0';
+      el.style.display = '';
       if (id === 'evc') el.style.transform = 'translateY(20px) scale(0.95)';
       if (id === 'epre') el.style.transform = 'translateY(-12px)';
       if (id === 'ehl') el.style.transform = 'translateY(26px)';

@@ -275,12 +275,49 @@ html,body{width:100%;height:100%;background:#06060e;overflow:hidden;font-family:
 body[data-app-view='site'] .root,
 body[data-app-view='mobile'] .root,
 body[data-app-view='portal'] .root{display:none}
+body[data-app-view='site']{
+  height:auto;
+  min-height:100%;
+  overflow-y:auto;
+}
+body[data-app-view='site'] .page-shell{
+  position:relative;
+  inset:auto;
+  min-height:100vh;
+  pointer-events:auto;
+}
+body[data-app-view='site'] .alt-view{
+  display:none;
+}
+body[data-app-view='site'] #siteView{
+  display:block;
+  position:relative;
+  inset:auto;
+  overflow:visible;
+  min-height:0;
+  padding:72px 24px 28px;
+  opacity:1;
+  pointer-events:auto;
+  touch-action:auto;
+  -webkit-overflow-scrolling:auto;
+  overscroll-behavior:auto;
+}
 .page-shell{position:fixed;inset:0;z-index:40;pointer-events:none}
 .page-switcher{position:fixed;top:12px;left:12px;z-index:50;display:flex;gap:8px;pointer-events:auto;flex-wrap:wrap}
 .page-chip{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);background:rgba(6,6,14,0.84);color:rgba(255,255,255,0.55);text-decoration:none;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;backdrop-filter:blur(8px)}
 .page-chip.active{border-color:rgba(61,214,140,0.6);background:rgba(61,214,140,0.12);color:#3dd68c}
-.alt-view{position:absolute;inset:0;overflow:auto;padding:72px 24px 28px;opacity:0;pointer-events:none;transition:opacity 0.25s ease;background:radial-gradient(circle at top,rgba(61,214,140,0.08),transparent 34%),linear-gradient(180deg,#06060e 0%,#070712 100%)}
+.alt-view{position:absolute;inset:0;overflow:auto;padding:72px 24px 28px;opacity:0;pointer-events:none;transition:opacity 0.25s ease;background:radial-gradient(circle at top,rgba(61,214,140,0.08),transparent 34%),linear-gradient(180deg,#06060e 0%,#070712 100%);touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 .alt-view.active{opacity:1;pointer-events:auto}
+body[data-app-view='site'] .site-view{
+  position:relative;
+  min-height:0;
+  overflow:visible;
+  scroll-snap-type:none;
+  scroll-behavior:auto;
+  touch-action:auto;
+  -webkit-overflow-scrolling:auto;
+  overscroll-behavior:auto;
+}
 .alt-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin:0 auto 20px;max-width:1200px;padding:22px;border:1px solid rgba(255,255,255,0.06);border-radius:18px;background:rgba(255,255,255,0.03);backdrop-filter:blur(8px)}
 .alt-kicker{font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#3dd68c;font-weight:800;margin-bottom:8px}
 .alt-title{font-size:54px;line-height:0.95;letter-spacing:-0.04em;margin-bottom:10px;color:rgba(232,228,210,0.98)}
