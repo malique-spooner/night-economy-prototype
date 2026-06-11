@@ -46,6 +46,10 @@ const PAGE_STATE = {
   },
 };
 
+let siteWhyScrollController = null;
+let siteLandingScrollController = null;
+let siteTestimonialCarouselTimer = null;
+
 const PAGE_STEP = 0.5;
 const SAFE_PRICE_MIN = 0.25;
 
@@ -121,6 +125,10 @@ function escapeHtml(value) {
   })[ch]);
 }
 
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
 function formatMoney(value) {
   return `£${Number(value || 0).toFixed(2)}`;
 }
@@ -131,6 +139,206 @@ function formatShortTime(ts) {
 
 function formatShortDate(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+
+function initWhyScrollStory() {
+  const section = document.getElementById('site-why');
+  if (!section) return;
+
+  siteWhyScrollController?.disconnect?.();
+
+  const cards = [...section.querySelectorAll('.site-why-card')];
+  const visual = section.querySelector('.site-why-visual');
+  const stageTitle = section.querySelector('[data-why-stage-title]');
+  const stageSub = section.querySelector('[data-why-stage-sub]');
+  if (!cards.length) return;
+
+  let rafId = 0;
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      entry.target.toggleAttribute('data-inview', entry.isIntersecting);
+    });
+  }, {
+    threshold: [0, 0.15, 0.35, 0.55, 0.75, 1],
+    rootMargin: '0px 0px -10% 0px',
+  });
+
+  observer.observe(section);
+  cards.forEach(card => observer.observe(card));
+
+  function update() {
+    rafId = 0;
+    const rect = section.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const progress = clamp01((viewportHeight * 0.72 - rect.top) / (rect.height + viewportHeight * 0.36));
+
+    section.style.setProperty('--why-progress', progress.toFixed(4));
+    section.dataset.progress = progress.toFixed(4);
+    section.dataset.inview = rect.bottom > 0 && rect.top < viewportHeight ? 'true' : 'false';
+
+    cards.forEach((card, index) => {
+      const localProgress = clamp01(progress * cards.length - index);
+      card.style.setProperty('--card-progress', localProgress.toFixed(4));
+      card.dataset.active = localProgress >= 0.42 ? 'true' : 'false';
+    });
+
+    if (visual) {
+      const wrap = visual.parentElement;
+      const wrapRect = wrap?.getBoundingClientRect();
+      const pinTop = 96;
+      const visualHeight = visual.offsetHeight || 0;
+      if (!wrap || !wrapRect || window.innerWidth <= 900) {
+        visual.removeAttribute('style');
+      } else if (wrapRect.top > pinTop) {
+        visual.style.position = 'relative';
+        visual.style.top = '';
+        visual.style.left = '';
+        visual.style.width = '';
+        visual.style.marginTop = '';
+      } else if (wrapRect.bottom <= pinTop + visualHeight) {
+        visual.style.position = 'absolute';
+        visual.style.top = `${Math.max(0, wrap.offsetHeight - visualHeight)}px`;
+        visual.style.left = '0';
+        visual.style.width = '100%';
+        visual.style.marginTop = '0';
+      } else {
+        visual.style.position = 'fixed';
+        visual.style.top = `${pinTop}px`;
+        visual.style.left = `${wrapRect.left}px`;
+        visual.style.width = `${wrapRect.width}px`;
+        visual.style.marginTop = '0';
+      }
+    }
+
+    const activeIndex = Math.min(cards.length - 1, Math.max(0, Math.floor(progress * cards.length)));
+    if (visual) visual.dataset.scene = String(activeIndex + 1);
+    if (stageTitle && cards[activeIndex]) stageTitle.textContent = cards[activeIndex].querySelector('strong')?.textContent || '';
+    if (stageSub && cards[activeIndex]) stageSub.textContent = cards[activeIndex].querySelector('p')?.textContent || '';
+  }
+
+  function onScroll() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(update);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  siteWhyScrollController = {
+    disconnect() {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    },
+  };
+}
+
+function initSiteLandingMotion() {
+  siteLandingScrollController?.disconnect?.();
+  if (siteTestimonialCarouselTimer) {
+    clearInterval(siteTestimonialCarouselTimer);
+    siteTestimonialCarouselTimer = null;
+  }
+
+  const counters = [...document.querySelectorAll('[data-count-to]')];
+  const draggables = [...document.querySelectorAll('[data-drag-scroll]')];
+  const autoCarousel = document.querySelector('[data-auto-carousel]');
+  const cleanups = [];
+
+  if (counters.length) {
+    const counterObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting || entry.target.dataset.counted === 'true') return;
+        entry.target.dataset.counted = 'true';
+        const target = Number(entry.target.dataset.countTo || 0);
+        const suffix = entry.target.dataset.countSuffix || '';
+        const prefix = entry.target.dataset.countPrefix || '';
+        const duration = 1250;
+        const started = performance.now();
+
+        function tick(now) {
+          const progress = clamp01((now - started) / duration);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const value = Math.round(target * eased);
+          entry.target.textContent = `${prefix}${value.toLocaleString('en-GB')}${suffix}`;
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.35 });
+
+    counters.forEach(counter => counterObserver.observe(counter));
+    cleanups.push(() => counterObserver.disconnect());
+  }
+
+  draggables.forEach(track => {
+    let isDown = false;
+    let startX = 0;
+    let startScroll = 0;
+
+    const onPointerDown = event => {
+      isDown = true;
+      startX = event.clientX;
+      startScroll = track.scrollLeft;
+      track.classList.add('is-dragging');
+      track.setPointerCapture?.(event.pointerId);
+    };
+    const onPointerMove = event => {
+      if (!isDown) return;
+      track.scrollLeft = startScroll - (event.clientX - startX);
+    };
+    const stopDragging = () => {
+      isDown = false;
+      track.classList.remove('is-dragging');
+    };
+
+    track.addEventListener('pointerdown', onPointerDown);
+    track.addEventListener('pointermove', onPointerMove);
+    track.addEventListener('pointerup', stopDragging);
+    track.addEventListener('pointercancel', stopDragging);
+    track.addEventListener('mouseleave', stopDragging);
+    cleanups.push(() => {
+      track.removeEventListener('pointerdown', onPointerDown);
+      track.removeEventListener('pointermove', onPointerMove);
+      track.removeEventListener('pointerup', stopDragging);
+      track.removeEventListener('pointercancel', stopDragging);
+      track.removeEventListener('mouseleave', stopDragging);
+    });
+  });
+
+  if (autoCarousel) {
+    let paused = false;
+    const pause = () => { paused = true; };
+    const resume = () => { paused = false; };
+    autoCarousel.addEventListener('focusin', pause);
+    autoCarousel.addEventListener('focusout', resume);
+    siteTestimonialCarouselTimer = setInterval(() => {
+      if (paused || autoCarousel.matches('.is-dragging')) return;
+      const maxScroll = autoCarousel.scrollWidth - autoCarousel.clientWidth;
+      if (maxScroll <= 0) return;
+      const next = autoCarousel.scrollLeft + Math.min(392, autoCarousel.clientWidth * 0.72);
+      autoCarousel.scrollLeft = next >= maxScroll - 8 ? 0 : next;
+    }, 3600);
+    cleanups.push(() => {
+      autoCarousel.removeEventListener('focusin', pause);
+      autoCarousel.removeEventListener('focusout', resume);
+      if (siteTestimonialCarouselTimer) {
+        clearInterval(siteTestimonialCarouselTimer);
+        siteTestimonialCarouselTimer = null;
+      }
+    });
+  }
+
+  siteLandingScrollController = {
+    disconnect() {
+      cleanups.forEach(cleanup => cleanup());
+    },
+  };
 }
 
 function groupBy(items, keyFn) {
@@ -242,23 +450,41 @@ function injectPageShell() {
                 <div class="site-kicker">Why it wins</div>
                 <h2>Software the room can feel.</h2>
                 <p>Night Economy works because it feels immediate, not technical. Guests read the movement at a glance, staff know where to steer attention, and operators keep control without turning service into a system demo.</p>
+                <div class="site-why-panel" aria-label="Why Night Economy works">
+                  <article class="site-why-card site-why-card-primary">
+                    <span>01</span>
+                    <strong>Instantly legible</strong>
+                    <p>Big type, clear movement, and one live signal make the room easy to understand from across the bar.</p>
+                  </article>
+                  <article class="site-why-card">
+                    <span>02</span>
+                    <strong>Calm under pressure</strong>
+                    <p>The experience feels editorial and premium, so the room gets energy without noise or friction.</p>
+                  </article>
+                  <article class="site-why-card">
+                    <span>03</span>
+                    <strong>Guides demand, not just price</strong>
+                    <p>Operators can shape what people notice next, which is the real lever behind higher-quality orders.</p>
+                  </article>
+                </div>
               </div>
-              <div class="site-why-panel" aria-label="Why Night Economy works">
-                <article class="site-why-card site-why-card-primary">
-                  <span>01</span>
-                  <strong>Instantly legible</strong>
-                  <p>Big type, clear movement, and one live signal make the room easy to understand from across the bar.</p>
-                </article>
-                <article class="site-why-card">
-                  <span>02</span>
-                  <strong>Calm under pressure</strong>
-                  <p>The experience feels editorial and premium, so the room gets energy without noise or friction.</p>
-                </article>
-                <article class="site-why-card">
-                  <span>03</span>
-                  <strong>Guides demand, not just price</strong>
-                  <p>Operators can shape what people notice next, which is the real lever behind higher-quality orders.</p>
-                </article>
+              <div class="site-why-visual-wrap">
+                <div class="site-why-visual" data-scene="1" aria-hidden="true">
+                  <div class="site-display-mock">
+                    <div class="site-display-top">
+                      <span>Market open</span>
+                      <strong>22:48</strong>
+                    </div>
+                    <div class="site-display-hero">
+                      <span data-why-stage-title>Instantly legible</span>
+                      <strong>£9.80</strong>
+                    </div>
+                    <div class="site-display-rows">
+                      <i></i><i></i><i></i><i></i>
+                    </div>
+                    <div class="site-display-note" data-why-stage-sub>Big type, clear movement, and one live signal make the room easy to understand from across the bar.</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -266,40 +492,64 @@ function injectPageShell() {
 
         <section id="site-what" class="site-section">
           <div class="site-section-intro">
-            <div class="site-kicker">What you get</div>
-            <h2>One system. Three wins.</h2>
+            <div class="site-kicker">The payoff</div>
+            <h2>Three numbers the room can feel.</h2>
           </div>
-          <div class="site-value-grid">
-            <article class="site-value-card tone-room">
-              <span>3</span>
+          <div class="site-metric-grid">
+            <article class="site-metric-card tone-room">
+              <span data-count-to="3">0</span>
               <strong>Connected product surfaces</strong>
               <p>Room display, guest mobile, and operator portal all work together as one system.</p>
             </article>
-            <article class="site-value-card tone-guest">
-              <span>1</span>
+            <article class="site-metric-card tone-guest">
+              <span data-count-to="1840" data-count-suffix="+">0</span>
               <strong>Shared live market model</strong>
-              <p>Every screen reflects the same live state, so the product feels consistent at every touchpoint.</p>
+              <p>Orders can flow through a single live state, so every screen feels consistent at every touchpoint.</p>
             </article>
-            <article class="site-value-card tone-ops">
-              <span>∞</span>
+            <article class="site-metric-card tone-ops">
+              <span data-count-to="12" data-count-prefix="+" data-count-suffix="%">0</span>
               <strong>Moments that keep attention alive</strong>
               <p>Movement, spotlight moments, and crash events give guests fresh reasons to look up and re-engage.</p>
             </article>
           </div>
         </section>
 
-        <section id="site-how" class="site-section site-how">
+        <section id="site-decks" class="site-section site-decks">
           <div class="site-section-intro">
-            <div class="site-kicker">How It Works</div>
-            <h2>Three moments move the market.</h2>
-            <p>From live market movement to editorial spotlighting to high-attention event windows, each moment is designed to influence demand in a different way.</p>
+            <div class="site-kicker">Product flow</div>
+            <h2>Drag through the venue stack.</h2>
+            <p>Each surface has a job: make the room readable, keep the guest menu alive, and give operators calm control behind the bar.</p>
           </div>
-          <div class="site-moment-tabs" role="tablist" aria-label="How it works">
-            <button class="site-moment-tab" data-site-moment="market" type="button">Market</button>
-            <button class="site-moment-tab" data-site-moment="spotlight" type="button">Spotlight</button>
-            <button class="site-moment-tab" data-site-moment="crash" type="button">Crash</button>
+          <div class="site-deck-track" data-drag-scroll aria-label="Venue stack carousel">
+            <article class="site-deck-slide tone-display">
+              <span>(01) Room display</span>
+              <strong>Live pricing the whole room can read.</strong>
+              <div class="site-deck-screen site-deck-preview">
+                <iframe src="./?view=tv" title="Night Economy TV view preview" loading="lazy"></iframe>
+              </div>
+            </article>
+            <article class="site-deck-slide tone-mobile">
+              <span>(02) Guest mobile</span>
+              <strong>A menu that mirrors the moment.</strong>
+              <div class="site-deck-screen site-deck-preview phone">
+                <iframe src="./?view=mobile" title="Night Economy mobile view preview" loading="lazy"></iframe>
+              </div>
+            </article>
+            <article class="site-deck-slide tone-portal">
+              <span>(03) Operator portal</span>
+              <strong>Control demand without slowing service.</strong>
+              <div class="site-deck-screen site-deck-preview">
+                <iframe src="./?view=portal" title="Night Economy portal preview" loading="lazy"></iframe>
+              </div>
+            </article>
+            <article class="site-deck-slide tone-event">
+              <span>(04) Crash moment</span>
+              <strong>High-attention events that create ritual.</strong>
+              <div class="site-deck-screen site-deck-preview">
+                <iframe src="./?view=tv&mode=crash" title="Night Economy crash preview" loading="lazy"></iframe>
+              </div>
+            </article>
           </div>
-          <div class="site-moment-panel" id="siteMomentPanel"></div>
         </section>
 
         <section id="site-testimonials" class="site-section site-testimonials">
@@ -307,27 +557,55 @@ function injectPageShell() {
             <div class="site-kicker">What people say</div>
             <h2>The value is obvious fast.</h2>
           </div>
-          <div class="site-testimonial-grid">
-            <article class="site-testimonial-card tone-cream">
-              <div class="quote-mark">"</div>
-              <p>It stops feeling like a menu and starts feeling like a live part of the venue. Guests begin talking about what is moving before the team even prompts them.</p>
-              <span>Venue founder, premium cocktail concept</span>
-            </article>
-            <article class="site-testimonial-card tone-white">
-              <div class="quote-mark">"</div>
-              <p>The crash mechanic is what guests remember, but the control layer is what makes the product operationally usable.</p>
-              <span>Operator, launch partner</span>
-            </article>
-            <article class="site-testimonial-card tone-green">
-              <div class="quote-mark">"</div>
-              <p>Spotlight and live value give us a natural way to guide demand without making the room feel scripted.</p>
-              <span>Bar manager, hotel group</span>
-            </article>
-            <article class="site-testimonial-card tone-dark">
-              <div class="quote-mark">"</div>
-              <p>It gives the room its own ritual. Guests begin following the market instead of just reading a list and moving on.</p>
-              <span>Creative director, launch venue</span>
-            </article>
+          <div class="site-testimonial-marquee" aria-label="Testimonial carousel">
+            <div class="site-testimonial-track">
+              ${[0, 1].map(() => `
+                <article class="site-testimonial-card tone-cream">
+                  <p>It stops feeling like a menu and starts feeling like a live part of the venue. Guests begin talking about what is moving before the team even prompts them.</p>
+                  <span>Venue founder, premium cocktail concept</span>
+                </article>
+                <article class="site-testimonial-card tone-white">
+                  <p>The crash mechanic is what guests remember, but the control layer is what makes the product operationally usable.</p>
+                  <span>Operator, launch partner</span>
+                </article>
+                <article class="site-testimonial-card tone-green">
+                  <p>Spotlight and live value give us a natural way to guide demand without making the room feel scripted.</p>
+                  <span>Bar manager, hotel group</span>
+                </article>
+                <article class="site-testimonial-card tone-dark">
+                  <p>It gives the room its own ritual. Guests begin following the market instead of just reading a list and moving on.</p>
+                  <span>Creative director, launch venue</span>
+                </article>
+                <article class="site-testimonial-card tone-cream">
+                  <p>The best part is how quickly the team understood it. The screen gives them a shared language for the floor.</p>
+                  <span>General manager, late-night venue</span>
+                </article>
+                <article class="site-testimonial-card tone-white">
+                  <p>It makes premium ordering feel playful without cheapening the venue. That balance is hard to get right.</p>
+                  <span>Hospitality consultant</span>
+                </article>
+                <article class="site-testimonial-card tone-green">
+                  <p>Guests kept checking the board between rounds. It created a rhythm we normally have to manufacture with staff prompts.</p>
+                  <span>Events lead, members club</span>
+                </article>
+              `).join('')}
+            </div>
+          </div>
+          <div class="site-testimonial-ticker" aria-hidden="true">
+            <div class="site-testimonial-ticker-track">
+              <span>Live venue signal</span>
+              <strong>Guests checking the board between rounds</strong>
+              <span>Demand guided without staff prompts</span>
+              <strong>Crash moments remembered after close</strong>
+              <span>Operator controls stay calm under pressure</span>
+              <strong>Premium energy without noise</strong>
+              <span>Live venue signal</span>
+              <strong>Guests checking the board between rounds</strong>
+              <span>Demand guided without staff prompts</span>
+              <strong>Crash moments remembered after close</strong>
+              <span>Operator controls stay calm under pressure</span>
+              <strong>Premium energy without noise</strong>
+            </div>
           </div>
         </section>
 
@@ -374,7 +652,7 @@ function injectPageShell() {
             <div>
               <span>Product</span>
               <a href="#site-why">Why it works</a>
-              <a href="#site-how">Product moments</a>
+              <a href="#site-decks">Product moments</a>
               <a href="#site-subscribe">Operator portal</a>
             </div>
             <div>
@@ -1081,7 +1359,7 @@ function renderSiteView() {
   const emailInput = document.getElementById('siteOwnerEmail');
   const planSelect = document.getElementById('sitePlanSelect');
   const momentPanel = document.getElementById('siteMomentPanel');
-  if (!pricing || !form || !venueInput || !ownerInput || !emailInput || !planSelect || !momentPanel) return;
+  if (!pricing || !form || !venueInput || !ownerInput || !emailInput || !planSelect) return;
 
   const plans = [
     {
@@ -1130,7 +1408,10 @@ function renderSiteView() {
   ownerInput.value = profile.ownerName === 'Venue Owner' ? '' : profile.ownerName;
   emailInput.value = profile.email === 'owner@night-economy.app' ? '' : profile.email;
   planSelect.value = PAGE_STATE.site.selectedPlan;
-  renderSiteMomentPanel(momentPanel, PAGE_STATE.site.activeMoment);
+  if (momentPanel) {
+    renderSiteMomentPanel(momentPanel, PAGE_STATE.site.activeMoment);
+  }
+  initSiteLandingMotion();
 
   document.querySelectorAll('.site-moment-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.siteMoment === PAGE_STATE.site.activeMoment);
@@ -1161,6 +1442,8 @@ function renderSiteView() {
     setActiveAppView('portal');
     refreshAuxViews();
   };
+
+  initWhyScrollStory();
 }
 
 function bindPortalEmployeeControls(controls) {
