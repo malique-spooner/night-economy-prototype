@@ -3,7 +3,40 @@
    ════════════════════════════════════════════════════════════════════ */
 
 // Market data - imported from data.js
-const DEFAULT_CATEGORIES = [...new Set(DRINKS.map(d => d.cat))];
+const DEFAULT_CATEGORIES = [
+  'signature-cocktails',
+  'classic-cocktails',
+  'mocktails',
+  'draft-beer',
+  'ale',
+  'food',
+];
+const CATEGORY_ALIASES = {
+  signature: 'signature-cocktails',
+  signature_cocktails: 'signature-cocktails',
+  'signature-cocktail': 'signature-cocktails',
+  classic: 'classic-cocktails',
+  classic_cocktails: 'classic-cocktails',
+  'classic-cocktail': 'classic-cocktails',
+  'bloody-mary': 'classic-cocktails',
+  margarita: 'classic-cocktails',
+  spritz: 'classic-cocktails',
+  mojito: 'classic-cocktails',
+  negroni: 'classic-cocktails',
+  'old-fashioned': 'classic-cocktails',
+  espresso: 'classic-cocktails',
+  mocktail: 'mocktails',
+  mocktails: 'mocktails',
+  beer: 'draft-beer',
+  'draft-beer': 'draft-beer',
+  ale: 'ale',
+  food: 'food',
+};
+
+function normalizeMarketCategory(cat) {
+  const key = String(cat || '').trim().toLowerCase().replace(/\s+/g, '-');
+  return CATEGORY_ALIASES[key] || key || 'signature-cocktails';
+}
 const MARKET_SETTINGS_KEY = 'night-economy-market-settings';
 const SALES_LOG_KEY = 'night-economy-sales-log';
 const MARKET_HISTORY_KEY = 'night-economy-market-history';
@@ -11,13 +44,15 @@ const MARKET_HISTORY_KEY = 'night-economy-market-history';
 function buildDefaultMarketSettings() {
   const drinks = {};
   DRINKS.forEach(d => {
+    const cat = normalizeMarketCategory(d.cat);
     drinks[d.id] = {
       name: d.n,
-      cat: d.cat,
+      cat,
       salePrice: d.b,
       floor: +(d.b * 0.65).toFixed(2),
       ceiling: +(d.b * 1.65).toFixed(2),
       soldOut: false,
+      image: d.image || '',
     };
   });
 
@@ -107,12 +142,13 @@ function rebuildMarketState() {
     .filter(d => !(MARKET_SETTINGS.drinks[d.id] && MARKET_SETTINGS.drinks[d.id].hidden))
     .map(d => {
       const s = MARKET_SETTINGS.drinks[d.id] || {};
-      const catS = MARKET_SETTINGS.categories[d.cat] || {};
+      const cat = normalizeMarketCategory(s.cat || d.cat);
+      const catS = MARKET_SETTINGS.categories[cat] || {};
       const salePrice = typeof s.salePrice === 'number' ? s.salePrice : d.b;
       return {
         ...d,
         n: s.name || d.n,
-        cat: s.cat || d.cat,
+        cat,
         basePrice: d.b,
         b: salePrice,
         p: salePrice,
@@ -121,6 +157,7 @@ function rebuildMarketState() {
         floor: typeof s.floor === 'number' ? s.floor : +(salePrice * 0.65).toFixed(2),
         ceiling: typeof s.ceiling === 'number' ? s.ceiling : +(salePrice * 1.65).toFixed(2),
         soldOut: !!s.soldOut || !!catS.soldOut,
+        image: s.image || d.image || '',
         timeline: [],
       };
     });
@@ -128,7 +165,7 @@ function rebuildMarketState() {
     .filter(([id, s]) => !defaultIds.has(id) && !s.hidden)
     .map(([id, s]) => {
       const salePrice = typeof s.salePrice === 'number' ? s.salePrice : 10;
-      const cat = s.cat || 'signature';
+      const cat = normalizeMarketCategory(s.cat || 'signature-cocktails');
       const catS = MARKET_SETTINGS.categories[cat] || {};
       return {
         id,
@@ -142,6 +179,7 @@ function rebuildMarketState() {
         floor: typeof s.floor === 'number' ? s.floor : +(salePrice * 0.65).toFixed(2),
         ceiling: typeof s.ceiling === 'number' ? s.ceiling : +(salePrice * 1.65).toFixed(2),
         soldOut: !!s.soldOut || !!catS.soldOut,
+        image: s.image || '',
         timeline: [],
         custom: true,
       };
@@ -159,7 +197,7 @@ function syncDrinkFromSettings(drinkId) {
   const drink = D.find(d => d.id === drinkId);
   if (!drink) return;
   const s = MARKET_SETTINGS.drinks[drinkId] || {};
-  const nextCat = s.cat || drink.cat;
+  const nextCat = normalizeMarketCategory(s.cat || drink.cat);
   const catS = MARKET_SETTINGS.categories[nextCat] || {};
   if (s.name) drink.n = s.name;
   drink.cat = nextCat;
@@ -171,6 +209,7 @@ function syncDrinkFromSettings(drinkId) {
   }
   if (typeof s.floor === 'number') drink.floor = s.floor;
   if (typeof s.ceiling === 'number') drink.ceiling = s.ceiling;
+  drink.image = s.image || drink.image || '';
   drink.soldOut = !!s.soldOut || !!catS.soldOut;
 }
 
@@ -716,18 +755,19 @@ function setDrinkMarketConfig(drinkId, patch, options = {}) {
 }
 
 function setCategoryMarketConfig(cat, patch, options = {}) {
-  if (!MARKET_SETTINGS.categories[cat]) {
-    MARKET_SETTINGS.categories[cat] = { label: cat.replace('-', ' '), soldOut: false };
+  const nextCat = normalizeMarketCategory(cat);
+  if (!MARKET_SETTINGS.categories[nextCat]) {
+    MARKET_SETTINGS.categories[nextCat] = { label: nextCat.replace('-', ' '), soldOut: false };
   }
   const previous = options.recordHistory ? cloneMarketSettings() : null;
-  MARKET_SETTINGS.categories[cat] = { ...MARKET_SETTINGS.categories[cat], ...patch };
+  MARKET_SETTINGS.categories[nextCat] = { ...MARKET_SETTINGS.categories[nextCat], ...patch };
   saveMarketSettings();
   D.forEach(d => syncDrinkFromSettings(d.id));
   if (options.recordHistory && previous) {
     pushMarketHistory({
       t: Date.now(),
       kind: 'category',
-      id: cat,
+      id: nextCat,
       prev: previous,
       label: patch.soldOut ? 'Category sold-out state changed' : 'Updated category',
     });

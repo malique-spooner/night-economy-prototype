@@ -25,7 +25,12 @@ const PAGE_STATE = {
   },
   portal: {
     role: 'owner',
-    selectedTab: 'overview',
+    selectedTab: 'start',
+    marketLive: false,
+    launchDate: '',
+    launchStartTime: '',
+    launchEndTime: '',
+    crashInterval: '30',
   },
   manager: {
     range: 'session',
@@ -657,7 +662,6 @@ function injectPageShell() {
         <section class="mobile-hero">
           <div class="brand mobile-hero-title">Night Economy</div>
         </section>
-        <nav class="mobile-rail" id="mobileMenuRail" aria-label="Menu categories"></nav>
         <main class="mobile-menu" id="mobileMenuSections"></main>
       </div>
     </section>
@@ -668,24 +672,15 @@ function injectPageShell() {
           <aside class="portal-sidebar">
             <div class="portal-sidebar-brand">
               <div class="portal-sidebar-kicker">Night Economy</div>
-              <strong>Market Control</strong>
+              <strong>Night Economy</strong>
             </div>
-            <div class="portal-plan-card" id="portalPlanCard"></div>
-            <div class="portal-sidebar-meta" id="portalSidebarMeta"></div>
+            <nav class="portal-nav" id="portalNav" aria-label="Portal sections"></nav>
+            <div class="portal-sidebar-foot">
+              <button class="portal-signout" id="portalSignOut" type="button">Sign out</button>
+            </div>
           </aside>
 
           <main class="portal-main">
-            <section class="portal-header">
-              <div>
-                <div class="portal-header-kicker">Single operator login</div>
-                <h1>Set the market. Keep service moving.</h1>
-                <p id="portalHeaderSub" class="portal-header-sub">Add drinks, pause items, and set price rails for the live board and guest menu.</p>
-              </div>
-              <div class="portal-inline-actions">
-                <input id="portalDrinkSearch" class="manager-search portal-search" type="search" placeholder="Search drinks">
-                <div class="save-pill" id="portalSaveState">Saved</div>
-              </div>
-            </section>
             <div id="portalWorkspace" class="portal-workspace"></div>
           </main>
         </div>
@@ -958,6 +953,9 @@ function normalizeDrinkPatch(drink, patch) {
   if (Object.prototype.hasOwnProperty.call(next, 'cat')) {
     next.cat = next.cat || drink.cat;
   }
+  if (Object.prototype.hasOwnProperty.call(next, 'image')) {
+    next.image = String(next.image || '').trim();
+  }
 
   const sale = Object.prototype.hasOwnProperty.call(next, 'salePrice') ? next.salePrice : drink.b;
   let floor = Object.prototype.hasOwnProperty.call(next, 'floor') ? next.floor : drink.floor;
@@ -1024,11 +1022,12 @@ function renderBoardInto(viewIdx, config = {}) {
       featured.innerHTML = featuredDrinks.map((d, idx) => {
         const pct = ((d.p - d.b) / d.b * 100);
         const up = d.p >= d.b;
+        const status = getDrinkStatusLine({ name: d.n, delta: (d.p - d.b) / d.b, orders: d.o }, d.id);
         return `
           <article class="feature-tile ${d.soldOut ? 'sold-out' : ''}">
             <div class="feature-tile-top">
               <span class="feature-rank">0${idx + 1}</span>
-              <span class="feature-cat">${d.cat.replace('-', ' ')}</span>
+              <span class="feature-cat">${status.hook}</span>
             </div>
             <strong class="feature-name">${d.n}</strong>
             <div class="feature-bottom">
@@ -1061,8 +1060,9 @@ function renderBoardInto(viewIdx, config = {}) {
         const pct = ((d.p - d.b) / d.b * 100).toFixed(1);
         const up = d.p >= d.b;
         const soldBadge = d.soldOut ? '<span class="val-badge">SOLD OUT</span>' : '';
+        const status = getDrinkStatusLine({ name: d.n, delta: (d.p - d.b) / d.b, orders: d.o }, d.id);
         row.innerHTML = `
-          <div><div class="dname">${d.n}${soldBadge}</div><div class="dcat-sub">${d.cat.replace('-',' ')}</div></div>
+          <div><div class="dname">${d.n}${soldBadge}</div><div class="dcat-sub">${status.hook}</div></div>
           <div class="dprice ${up?'up':'dn'}" id="mobile-p${d.id}">£${d.p.toFixed(2)}</div>
           <div class="spark-cell" id="mobile-sp${d.id}">${buildPricePositionMarkup(d)}</div>
           <div class="dpct ${up?'up':'dn'}" id="mobile-pct${d.id}">${up?'+':''}${pct}%</div>
@@ -1083,9 +1083,8 @@ function renderMobileMenuCards(items) {
     <article class="mobile-menu-card ${item.delta >= 0 ? 'up' : 'dn'}">
       <div class="mobile-menu-card-top">
         <strong>${escapeHtml(item.name)}</strong>
-        <span>${escapeHtml(item.price)}</span>
+        <span class="mobile-menu-card-price ${item.delta >= 0 ? 'up' : 'dn'}">${escapeHtml(item.price)}</span>
       </div>
-      <div class="mobile-menu-card-trend ${item.delta >= 0 ? 'up' : 'dn'}">${item.delta >= 0 ? '▲' : '▼'} ${Math.abs(item.delta).toFixed(1)}%</div>
       <div class="mobile-menu-card-note">${escapeHtml(item.note)}</div>
     </article>
   `).join('');
@@ -1112,10 +1111,15 @@ function getMobileRowPosition(item) {
 }
 
 function getMobileTickerSymbol(name) {
-  return String(name || '')
-    .replace(/[^a-zA-Z0-9 ]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
+  const clean = String(name || '')
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+    .trim();
+  if (!clean) return 'NE';
+
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
+
+  return words
     .slice(0, 3)
     .map(part => part[0])
     .join('')
@@ -1123,28 +1127,24 @@ function getMobileTickerSymbol(name) {
     .toUpperCase() || 'NE';
 }
 
-function getMobileDrinkAccent(item, index = 0) {
-  const tone = String(item?.tone || '').toLowerCase();
-  const name = String(item?.name || '').toLowerCase();
-  if (tone.includes('zero')) return { mark: '0%', hook: 'No alcohol', accent: 'mint' };
-  if (tone.includes('beer') || name.includes('lager') || name.includes('ale') || name.includes('pilsner')) return { mark: 'Pint', hook: 'Cold pour', accent: 'gold' };
-  if (tone.includes('food') || name.includes('fries') || name.includes('chips')) return { mark: 'Bite', hook: 'Table snack', accent: 'amber' };
-  if (name.includes('negroni') || name.includes('campari')) return { mark: 'Bitter', hook: 'Sharp finish', accent: 'ruby' };
-  if (name.includes('spritz') || name.includes('hugo')) return { mark: 'Fizz', hook: 'Light & bright', accent: 'citrus' };
-  if (name.includes('margarita')) return { mark: 'Salt', hook: 'Crowd mover', accent: 'lime' };
-  if (name.includes('espresso')) return { mark: 'Crema', hook: 'Late-night lift', accent: 'coffee' };
-  if (name.includes('bloody')) return { mark: 'Spice', hook: 'Savoury hit', accent: 'tomato' };
-  if (name.includes('old fashioned')) return { mark: 'Slow', hook: 'Spirit led', accent: 'oak' };
-  return { mark: index < 3 ? 'Hot' : 'Pour', hook: item?.note || 'Bar favourite', accent: 'house' };
+function getDrinkStatusLine(item, index = 0) {
+  const delta = Number(item?.delta || 0);
+  const orders = Number(item?.orders ?? item?.o ?? 0);
+  const absDelta = Math.abs(delta);
+  const tag = getMobileTickerSymbol(item?.name);
+  if (absDelta >= 6) return { mark: tag, hook: 'Volatile', accent: 'ruby' };
+  if (delta >= 0.9 || (delta >= 0.5 && orders >= 8)) return { mark: tag, hook: 'Fast mover', accent: 'lime' };
+  if (delta <= -0.9 || (delta <= -0.5 && orders >= 5)) return { mark: tag, hook: 'Stalling', accent: 'amber' };
+  if (absDelta < 0.25) return { mark: tag, hook: 'Steady', accent: 'mint' };
+  return { mark: tag, hook: 'Cooling', accent: 'citrus' };
 }
 
 function renderMobileMarketRows(items) {
   return items.map((item, index) => {
     const delta = Number(item.delta || 0);
     const up = delta >= 0;
-    const movement = Math.abs(delta) < 0.05 ? 'Holding' : up ? 'Moving up' : 'Cooling';
     const movementMark = Math.abs(delta) < 0.05 ? '•' : up ? '▲' : '▼';
-    const accent = getMobileDrinkAccent(item, index);
+    const accent = getDrinkStatusLine(item, index);
     return `
       <article class="mobile-market-row ${up ? 'up' : 'dn'} accent-${escapeHtml(accent.accent)}">
         <div class="mobile-drink-mark" aria-hidden="true">
@@ -1153,7 +1153,7 @@ function renderMobileMarketRows(items) {
         <div class="mobile-market-main">
           <div class="mobile-market-name">
             <strong>${escapeHtml(item.name)}</strong>
-            <span>${escapeHtml(accent.hook)} · ${movement}</span>
+            <span>${escapeHtml(accent.hook)}</span>
           </div>
           <div class="mobile-market-price ${up ? 'up' : 'dn'}">${escapeHtml(item.price)}</div>
         </div>
@@ -1234,20 +1234,13 @@ function renderManagerHistory() {
 }
 
 function renderMobileView() {
-  const rail = document.getElementById('mobileMenuRail');
   const sections = document.getElementById('mobileMenuSections');
-  if (!rail || !sections) return;
+  if (!sections) return;
 
   const activeSection = MOBILE_MENU_SECTIONS.some(section => section.id === PAGE_STATE.mobile.selectedCat)
     ? PAGE_STATE.mobile.selectedCat
     : MOBILE_MENU_SECTIONS[0].id;
   PAGE_STATE.mobile.selectedCat = activeSection;
-
-  rail.innerHTML = MOBILE_MENU_SECTIONS.map(section => `
-    <button class="mobile-rail-chip ${section.id === activeSection ? 'active' : ''}" data-mobile-section="${section.id}" type="button">
-      ${escapeHtml(section.label)}
-    </button>
-  `).join('');
 
   const allItems = MOBILE_MENU_SECTIONS.flatMap(section => section.items());
   const highestMover = [...allItems].sort((a, b) => Math.abs(Number(b.delta || 0)) - Math.abs(Number(a.delta || 0)))[0];
@@ -1265,6 +1258,13 @@ function renderMobileView() {
         <strong>${escapeHtml(getMobileTickerSymbol(highestMover?.name || 'Live board'))} ${highestMover?.delta >= 0 ? '▲' : '▼'} ${Math.abs(Number(highestMover?.delta || 0)).toFixed(1)}%</strong>
       </div>
     </section>
+    <nav class="mobile-rail" id="mobileMenuRail" aria-label="Menu categories">
+      ${MOBILE_MENU_SECTIONS.map(section => `
+        <button class="mobile-rail-chip ${section.id === activeSection ? 'active' : ''}" data-mobile-section="${section.id}" type="button">
+          ${escapeHtml(section.label)}
+        </button>
+      `).join('')}
+    </nav>
   ` + MOBILE_MENU_SECTIONS.map(section => {
     const items = section.items();
     const stats = getMobileSectionStats(items);
@@ -1283,6 +1283,9 @@ function renderMobileView() {
       </section>
     `;
   }).join('');
+
+  const rail = sections.querySelector('#mobileMenuRail');
+  if (!rail) return;
 
   let railScrollTimeout = 0;
   rail.querySelectorAll('[data-mobile-section]').forEach(btn => {
@@ -1643,15 +1646,27 @@ function bindPortalEmployeeControls(controls) {
 }
 
 function renderPortalDrinkRow(d) {
-  const delta = ((d.p - d.b) / d.b) * 100;
   const changed = hasDrinkChanged(d);
-  const custom = !DRINKS.some(item => item.id === d.id);
-  const cats = [...new Set([...DRINKS.map(item => item.cat), d.cat, 'signature'])];
+  const cats = [...new Set([...(DEFAULT_CATEGORIES || []), d.cat].filter(Boolean))];
+  const image = getPortalDrinkImage(d);
   return `
     <article class="portal-drink-row ${d.soldOut ? 'paused' : ''} ${changed ? 'changed' : ''}" data-drink-row="${escapeHtml(d.id)}">
+      <div class="portal-drink-image-action">
+        <button
+          class="portal-drink-image-btn ${image ? 'has-image' : 'empty'}"
+          type="button"
+          data-portal-image-action="${escapeHtml(d.id)}"
+          aria-label="${image ? 'Remove drink image' : 'Add drink image'}"
+          title="${image ? 'Remove image' : 'Add image'}"
+        >
+          <span class="portal-drink-image-icon add">+</span>
+          <span class="portal-drink-image-icon ok">✓</span>
+          <span class="portal-drink-image-icon remove">×</span>
+        </button>
+        <input type="file" accept="image/*" hidden data-portal-image-upload="${escapeHtml(d.id)}">
+      </div>
       <div class="portal-drink-live">
         <button class="portal-live-toggle ${d.soldOut ? 'off' : 'on'}" data-portal-toggle="${escapeHtml(d.id)}" type="button">${d.soldOut ? 'Paused' : 'Live'}</button>
-        <span>${custom ? 'Custom' : 'Menu'}</span>
       </div>
       <label class="portal-drink-name">
         <span>Drink</span>
@@ -1666,10 +1681,6 @@ function renderPortalDrinkRow(d) {
       ${portalMoneyField('Sale', 'salePrice', d.id, d.b)}
       ${portalMoneyField('Floor', 'floor', d.id, d.floor)}
       ${portalMoneyField('Ceiling', 'ceiling', d.id, d.ceiling)}
-      <div class="portal-drink-signal">
-        <span class="${delta >= 0 ? 'up' : 'dn'}">${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%</span>
-        <small>${d.o} orders</small>
-      </div>
       <button class="portal-remove-drink" data-portal-remove="${escapeHtml(d.id)}" type="button">Remove</button>
     </article>
   `;
@@ -1688,208 +1699,522 @@ function portalMoneyField(label, field, id, value) {
   `;
 }
 
-function renderPortalView() {
-  const profile = loadPortalProfile();
-  const planCard = document.getElementById('portalPlanCard');
-  const sidebarMeta = document.getElementById('portalSidebarMeta');
-  const workspace = document.getElementById('portalWorkspace');
-  const search = document.getElementById('portalDrinkSearch');
-  const saveState = document.getElementById('portalSaveState');
-  const headerSub = document.getElementById('portalHeaderSub');
-  if (!planCard || !sidebarMeta || !workspace || !search || !saveState || !headerSub) return;
+function getPortalDateTimeValues() {
+  const now = new Date();
+  const end = new Date(now.getTime() + 60 * 60 * 1000);
+  return {
+    date: now.toISOString().slice(0, 10),
+    startTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+    endTime: `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`,
+  };
+}
 
-  const sessionRecords = getSalesRange('session');
-  const snapshot = getPortalHealthSnapshot(sessionRecords);
-  const alerts = getAttentionItems();
+function formatPortalLaunchWindow(dateValue, startTimeValue, endTimeValue) {
+  if (!dateValue) return 'Launch window not set';
+  const date = new Date(`${dateValue}T${startTimeValue || '00:00'}:00`);
+  if (Number.isNaN(date.getTime())) return `${dateValue} ${startTimeValue || ''}${endTimeValue ? ` - ${endTimeValue}` : ''}`.trim();
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(date) + ((startTimeValue || endTimeValue) ? ` · ${startTimeValue || ''}${endTimeValue ? ` - ${endTimeValue}` : ''}` : '');
+}
+
+function renderPortalStartPage(profile) {
   const visible = getVisibleEmployeeDrinks();
-  const groupedVisible = groupBy(visible, drink => drink.cat);
-  const changedCount = D.filter(d => hasDrinkChanged(d)).length;
-  const guardrailIssues = D.filter(d => d.floor >= d.ceiling || d.b < d.floor || d.b > d.ceiling).length;
-  const liveCount = D.filter(d => !d.soldOut).length;
-
-  planCard.innerHTML = `
-    <strong>${escapeHtml(profile.venueName)}</strong>
-    <span>Single login · ${profile.subscribed ? 'Active' : 'Demo'} market</span>
-    <span>${liveCount} live drinks · ${snapshot.soldOut} paused</span>
-  `;
-
-  sidebarMeta.innerHTML = `
-    <div class="portal-sidebar-stat">
-      <span>Market state</span>
-      <strong>${typeof crashActive !== 'undefined' && crashActive ? 'Event mode' : 'Ready'}</strong>
-    </div>
-    <div class="portal-sidebar-stat">
-      <span>Changed rails</span>
-      <strong>${changedCount}</strong>
-    </div>
-    <div class="portal-sidebar-stat">
-      <span>Guardrail issues</span>
-      <strong>${guardrailIssues}</strong>
-    </div>
-  `;
-
-  headerSub.textContent = 'The portal only controls what Night Economy needs: menu membership, live status, sale price, floor, and ceiling.';
-
-  const alertHtml = alerts.length ? alerts.slice(0, 3).map(item => `
-    <article class="alert-card ${item.tone}">
-      <strong>${escapeHtml(item.title)}</strong>
-      <span>${escapeHtml(item.body)}</span>
-    </article>
-  `).join('') : '<div class="empty-state">No platform issues right now.</div>';
-
-  workspace.innerHTML = `
-    <section class="portal-simple-grid">
-      <div class="portal-editor">
-        <div class="portal-editor-head">
+  return `
+    <section class="portal-start-page">
+      <h1 class="portal-page-title">Portal</h1>
+      <section class="portal-start-strip">
+        <div class="portal-start-head">
           <div>
-            <div class="card-hdr">Market Drinks</div>
-            <h2>Drinks</h2>
+            <div class="portal-start-kicker">Start</div>
+            <h2>Launch window</h2>
           </div>
-          <div class="portal-inline-actions">
-            <button class="manager-action" id="portalOpenMarket">Open market</button>
-            <button class="manager-action" id="portalUndo">Undo</button>
-            <button class="manager-action" id="portalResetVenue">Reset</button>
+          <div class="portal-start-status ${PAGE_STATE.portal.marketLive ? 'live' : 'paused'}">
+            ${PAGE_STATE.portal.marketLive ? 'Live' : 'Paused'}
           </div>
         </div>
-
-        <form class="portal-add-drink" id="portalAddDrink">
-          <input name="name" placeholder="Add drink name" required>
-          <select name="cat">
-            ${[...new Set(DRINKS.map(d => d.cat))].map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat.replace('-', ' '))}</option>`).join('')}
-          </select>
-          <input name="price" type="number" step="0.01" min="0.25" value="12.00" aria-label="Sale price">
-          <button class="manager-action" type="submit">Add</button>
-        </form>
-
-        <div class="portal-filter-row" id="portalCatFilters"></div>
-        <div class="portal-drink-list" id="portalControls">
-          ${Object.keys(groupedVisible).length ? Object.entries(groupedVisible).map(([cat, items]) => `
-            <section class="portal-drink-group">
-              <div class="portal-drink-group-head">
-                <strong>${escapeHtml(cat.replace('-', ' '))}</strong>
-                <span>${items.length} drinks · ${items.filter(d => d.soldOut).length} paused</span>
-              </div>
-              ${items.map(renderPortalDrinkRow).join('')}
-            </section>
-          `).join('') : '<div class="empty-state">No drinks match this search.</div>'}
+        <div class="portal-start-controls">
+          <button class="portal-start-btn ${PAGE_STATE.portal.marketLive ? 'live' : 'paused'}" id="portalToggleService" type="button">
+            ${PAGE_STATE.portal.marketLive ? 'Pause' : 'Start'}
+          </button>
+          <label class="portal-launch-control">
+            <span>Crash interval</span>
+            <select id="portalCrashInterval">
+              <option value="15" ${PAGE_STATE.portal.crashInterval === '15' ? 'selected' : ''}>15 min</option>
+              <option value="30" ${PAGE_STATE.portal.crashInterval === '30' ? 'selected' : ''}>30 min</option>
+              <option value="60" ${PAGE_STATE.portal.crashInterval === '60' ? 'selected' : ''}>60 min</option>
+              <option value="120" ${PAGE_STATE.portal.crashInterval === '120' ? 'selected' : ''}>2 hours</option>
+            </select>
+          </label>
+          <label class="portal-launch-control">
+            <span>Date</span>
+            <input id="portalLaunchDate" type="date" value="${escapeHtml(PAGE_STATE.portal.launchDate)}">
+          </label>
+          <label class="portal-launch-control">
+            <span>Start time</span>
+            <input id="portalLaunchStartTime" type="time" value="${escapeHtml(PAGE_STATE.portal.launchStartTime)}">
+          </label>
+          <label class="portal-launch-control">
+            <span>End time</span>
+            <input id="portalLaunchEndTime" type="time" value="${escapeHtml(PAGE_STATE.portal.launchEndTime)}">
+          </label>
         </div>
+      </section>
+
+      <div class="portal-filter-row" id="portalCatFilters"></div>
+      <div class="portal-drink-list" id="portalControls">
+        ${renderPortalDrinkGroups(visible)}
       </div>
-
-      <aside class="portal-signal-panel">
-        <section class="portal-signal-card primary">
-          <div class="card-hdr">Platform Signal</div>
-          <div class="portal-signal-number">${snapshot.nearCeiling}</div>
-          <p>drinks are close to their ceiling. Use this to spot when the market rails are doing useful work.</p>
-        </section>
-        <section class="portal-signal-card">
-          <div class="card-hdr">Needs Attention</div>
-          <div class="alert-list">${alertHtml}</div>
-        </section>
-        <section class="portal-signal-card">
-          <div class="card-hdr">Locked Setup</div>
-          <div class="portal-locked-list">
-            <article><span>PIN</span><strong>Event rules</strong><p>Crash events, surge limits, and spotlight timing.</p></article>
-            <article><span>PIN</span><strong>Display pairing</strong><p>Connect room screens and QR menus.</p></article>
-            <article><span>PIN</span><strong>Billing</strong><p>Plan, invoices, and account settings.</p></article>
-          </div>
-        </section>
-      </aside>
+      <div class="portal-add-drink">
+        <input id="portalQuickDrinkName" type="text" placeholder="Drink">
+        <select id="portalQuickDrinkCat">
+          ${(DEFAULT_CATEGORIES || []).map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat.replace('-', ' '))}</option>`).join('')}
+        </select>
+        <input id="portalQuickDrinkPrice" type="number" step="0.01" min="0" placeholder="Price">
+        <input id="portalQuickDrinkFloor" type="number" step="0.01" min="0" placeholder="Floor">
+        <input id="portalQuickDrinkCeiling" type="number" step="0.01" min="0" placeholder="Ceiling">
+        <label class="portal-quick-checkbox" title="Sold out">
+          <input id="portalQuickDrinkSoldOut" type="checkbox">
+          <span>Sold out</span>
+        </label>
+        <button id="portalQuickDrinkAdd" type="button">Add</button>
+        <button class="portal-import-btn" id="portalCsvButton" type="button">CSV</button>
+        <input id="portalCsvInput" type="file" accept=".csv,text/csv" hidden>
+      </div>
     </section>
   `;
+}
 
-  search.value = PAGE_STATE.employee.search;
-  search.oninput = () => {
-    PAGE_STATE.employee.search = search.value;
-    renderPortalView();
+function renderPortalAccountPage(profile) {
+  return `
+    <section class="portal-page-grid">
+      <article class="portal-account-card portal-account-card-hero">
+        <h2>${escapeHtml(profile.plan)} plan</h2>
+        <div class="portal-account-actions">
+          <button class="manager-action" type="button" data-portal-account-action="manage">Manage subscription</button>
+          <button class="manager-action" type="button" data-portal-account-action="billing">Billing details</button>
+        </div>
+      </article>
+
+      <article class="portal-account-card">
+        <dl class="portal-account-list">
+          <div><dt>Venue</dt><dd>${escapeHtml(profile.venueName)}</dd></div>
+          <div><dt>Owner</dt><dd>${escapeHtml(profile.ownerName)}</dd></div>
+          <div><dt>Email</dt><dd>${escapeHtml(profile.email)}</dd></div>
+          <div><dt>Seats</dt><dd>${escapeHtml(String(profile.seats))}</dd></div>
+        </dl>
+      </article>
+
+      <article class="portal-account-card">
+        <dl class="portal-account-list">
+          <div><dt>Billing cycle</dt><dd>${escapeHtml(profile.billing)}</dd></div>
+          <div><dt>Status</dt><dd>${profile.subscribed ? 'Active' : 'Not activated'}</dd></div>
+          <div><dt>Access</dt><dd>${PAGE_STATE.portal.marketLive ? 'Market live' : 'Market paused'}</dd></div>
+          <div><dt>Portal role</dt><dd>${escapeHtml(PAGE_STATE.portal.role)}</dd></div>
+        </dl>
+      </article>
+    </section>
+  `;
+}
+
+function renderPortalDrinkGroups(visibleDrinks) {
+  const groupedVisible = groupBy(visibleDrinks, drink => drink.cat);
+  return Object.keys(groupedVisible).length ? Object.entries(groupedVisible).map(([cat, items]) => `
+    <section class="portal-drink-group">
+      <div class="portal-drink-group-head">
+        <strong>${escapeHtml(cat.replace('-', ' '))}</strong>
+        <span>${items.length} drinks · ${items.filter(d => d.soldOut).length} paused</span>
+      </div>
+      ${items.map(renderPortalDrinkRow).join('')}
+    </section>
+  `).join('') : '<div class="empty-state">No drinks match this search.</div>';
+}
+
+function slugifyPortalValue(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'drink';
+}
+
+function parsePortalCsv(text) {
+  const rows = String(text || '').trim().split(/\r?\n/).filter(Boolean);
+  if (!rows.length) return [];
+  const parseLine = line => {
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i += 1) {
+      const char = line[i];
+      const next = line[i + 1];
+      if (char === '"' && inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        cells.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    cells.push(current);
+    return cells.map(cell => cell.trim());
   };
 
-  const filters = workspace.querySelector('#portalCatFilters');
-  filters.innerHTML = ['all', ...new Set(D.map(d => d.cat))].map(cat => `<button class="range-chip ${PAGE_STATE.employee.selectedCat === cat ? 'active' : ''}" data-portal-cat="${cat}">${escapeHtml(cat === 'all' ? 'All drinks' : cat.replace('-', ' '))}</button>`).join('');
-  filters.querySelectorAll('[data-portal-cat]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      PAGE_STATE.employee.selectedCat = btn.dataset.portalCat;
-      renderPortalView();
-    });
+  const headers = parseLine(rows.shift()).map(header => header.toLowerCase());
+  return rows.map(line => {
+    const values = parseLine(line);
+    return headers.reduce((acc, header, index) => {
+      acc[header] = values[index] ?? '';
+      return acc;
+    }, {});
   });
+}
 
-  const controls = workspace.querySelector('#portalControls');
-  bindPortalEmployeeControls(controls);
+function mapPortalCsvRow(row) {
+  const name = String(row.name || row.drink || row.title || '').trim();
+  if (!name) return null;
+  const cat = normalizeMarketCategory(row.cat || row.category || 'signature-cocktails');
+  const id = String(row.id || row.slug || slugifyPortalValue(name)).trim();
+  const salePrice = Number(row.saleprice ?? row.sale_price ?? row.price ?? row.sale);
+  const floor = Number(row.floor);
+  const ceiling = Number(row.ceiling);
+  const soldOut = /^(1|true|yes|paused|sold out)$/i.test(String(row.soldout || row.status || ''));
+  const image = String(row.image || row.image_url || row.imageurl || '').trim();
+  return {
+    id,
+    name,
+    cat,
+    salePrice: Number.isFinite(salePrice) ? salePrice : undefined,
+    floor: Number.isFinite(floor) ? floor : undefined,
+    ceiling: Number.isFinite(ceiling) ? ceiling : undefined,
+    soldOut,
+    image,
+  };
+}
 
-  workspace.querySelectorAll('[data-portal-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const drink = D.find(d => d.id === btn.dataset.portalToggle);
-      if (!drink) return;
-      commitEmployeeEdit(drink.id, normalizeDrinkPatch(drink, { soldOut: !drink.soldOut }), `${drink.soldOut ? 'Resumed' : 'Paused'} ${drink.n}`);
-      renderPortalView();
-    });
+function upsertPortalDrinkFromImport(importRow) {
+  if (!importRow) return;
+  const existingId = D.find(d => d.id === importRow.id)?.id
+    || D.find(d => d.n.toLowerCase() === importRow.name.toLowerCase())?.id
+    || importRow.id;
+  const fallbackSale = Number.isFinite(importRow.salePrice) ? importRow.salePrice : 12;
+  const cat = normalizeMarketCategory(importRow.cat);
+  const existing = MARKET_SETTINGS.drinks[existingId] || {};
+  MARKET_SETTINGS.drinks[existingId] = {
+    ...existing,
+    name: importRow.name,
+    cat,
+    salePrice: Number.isFinite(importRow.salePrice) ? importRow.salePrice : existing.salePrice ?? fallbackSale,
+    floor: Number.isFinite(importRow.floor) ? importRow.floor : existing.floor ?? +(fallbackSale * 0.65).toFixed(2),
+    ceiling: Number.isFinite(importRow.ceiling) ? importRow.ceiling : existing.ceiling ?? +(fallbackSale * 1.65).toFixed(2),
+    soldOut: !!importRow.soldOut,
+    image: importRow.image || existing.image || '',
+  };
+  if (!MARKET_SETTINGS.categories[cat]) {
+    MARKET_SETTINGS.categories[cat] = { label: cat.replace('-', ' '), soldOut: false };
+  }
+}
+
+function createPortalDrinkFromQuickAdd(name, cat, salePrice, floorValue, ceilingValue, soldOut) {
+  const trimmedName = String(name || '').trim();
+  if (!trimmedName) return false;
+  const nextCat = normalizeMarketCategory(cat || 'signature-cocktails');
+  const numericSale = Number(salePrice);
+  const sale = Number.isFinite(numericSale) ? Math.max(SAFE_PRICE_MIN, numericSale) : 12;
+  const parsedFloor = Number(floorValue);
+  const parsedCeiling = Number(ceilingValue);
+  const floor = Number.isFinite(parsedFloor) ? Math.max(SAFE_PRICE_MIN, parsedFloor) : +(sale * 0.65).toFixed(2);
+  const ceiling = Number.isFinite(parsedCeiling) ? Math.max(SAFE_PRICE_MIN, parsedCeiling) : +(sale * 1.65).toFixed(2);
+  const idBase = slugifyPortalValue(trimmedName);
+  const id = D.some(d => d.id === idBase) ? `${idBase}-${D.length + 1}` : idBase;
+  applyMarketTransaction(`Added ${trimmedName}`, () => {
+    MARKET_SETTINGS.drinks[id] = {
+      ...(MARKET_SETTINGS.drinks[id] || {}),
+      name: trimmedName,
+      cat: nextCat,
+      salePrice: sale,
+      floor,
+      ceiling,
+      soldOut: !!soldOut,
+      image: '',
+    };
+    if (!MARKET_SETTINGS.categories[nextCat]) {
+      MARKET_SETTINGS.categories[nextCat] = { label: nextCat.replace('-', ' '), soldOut: false };
+    }
   });
+  return true;
+}
 
-  workspace.querySelectorAll('[data-portal-remove]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const drink = D.find(d => d.id === btn.dataset.portalRemove);
-      if (!drink) return;
-      applyMarketTransaction(`Removed ${drink.n}`, () => {
-        MARKET_SETTINGS.drinks[drink.id] = { ...(MARKET_SETTINGS.drinks[drink.id] || {}), hidden: true, soldOut: true };
+function readPortalFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
+function readPortalFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Failed to read image'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getPortalDrinkImage(drink) {
+  const image = drink?.image || MARKET_SETTINGS.drinks?.[drink?.id]?.image || '';
+  return String(image || '').trim();
+}
+
+function renderPortalView() {
+  const profile = loadPortalProfile();
+  const workspace = document.getElementById('portalWorkspace');
+  const nav = document.getElementById('portalNav');
+  const signOut = document.getElementById('portalSignOut');
+  if (!workspace || !nav || !signOut) return;
+
+  if (!PAGE_STATE.portal.launchDate || !PAGE_STATE.portal.launchStartTime || !PAGE_STATE.portal.launchEndTime) {
+    const defaults = getPortalDateTimeValues();
+    PAGE_STATE.portal.launchDate = PAGE_STATE.portal.launchDate || defaults.date;
+    PAGE_STATE.portal.launchStartTime = PAGE_STATE.portal.launchStartTime || defaults.startTime;
+    PAGE_STATE.portal.launchEndTime = PAGE_STATE.portal.launchEndTime || defaults.endTime;
+  }
+
+  const selectedTab = PAGE_STATE.portal.selectedTab || 'start';
+  PAGE_STATE.portal.selectedTab = selectedTab;
+
+  const tabs = [
+    { id: 'start', label: 'Start' },
+    { id: 'account', label: 'Account' },
+  ];
+
+  nav.innerHTML = tabs.map(tab => `
+    <button class="portal-nav-item ${selectedTab === tab.id ? 'active' : ''}" data-portal-tab="${tab.id}" type="button">
+      <span>${escapeHtml(tab.label)}</span>
+    </button>
+  `).join('');
+
+  workspace.innerHTML = selectedTab === 'start'
+    ? renderPortalStartPage(profile)
+    : renderPortalAccountPage(profile);
+
+  const syncLaunchInputs = () => {
+    const launchDate = document.getElementById('portalLaunchDate');
+    const launchStartTime = document.getElementById('portalLaunchStartTime');
+    const launchEndTime = document.getElementById('portalLaunchEndTime');
+    const crashInterval = document.getElementById('portalCrashInterval');
+    if (launchDate) launchDate.value = PAGE_STATE.portal.launchDate;
+    if (launchStartTime) launchStartTime.value = PAGE_STATE.portal.launchStartTime;
+    if (launchEndTime) launchEndTime.value = PAGE_STATE.portal.launchEndTime;
+    if (crashInterval) crashInterval.value = PAGE_STATE.portal.crashInterval;
+  };
+  syncLaunchInputs();
+
+  const toggleService = document.getElementById('portalToggleService');
+  if (toggleService) {
+    toggleService.onclick = () => {
+      PAGE_STATE.portal.marketLive = !PAGE_STATE.portal.marketLive;
+      renderPortalView();
+      showToast(PAGE_STATE.portal.marketLive ? 'Market started' : 'Market paused', 'success');
+    };
+  }
+
+  const launchDate = document.getElementById('portalLaunchDate');
+  if (launchDate) {
+    launchDate.oninput = () => {
+      PAGE_STATE.portal.launchDate = launchDate.value;
+    };
+  }
+
+  const launchStartTime = document.getElementById('portalLaunchStartTime');
+  if (launchStartTime) {
+    launchStartTime.oninput = () => {
+      PAGE_STATE.portal.launchStartTime = launchStartTime.value;
+    };
+  }
+
+  const launchEndTime = document.getElementById('portalLaunchEndTime');
+  if (launchEndTime) {
+    launchEndTime.oninput = () => {
+      PAGE_STATE.portal.launchEndTime = launchEndTime.value;
+    };
+  }
+
+  const crashInterval = document.getElementById('portalCrashInterval');
+  if (crashInterval) {
+    crashInterval.onchange = () => {
+      PAGE_STATE.portal.crashInterval = crashInterval.value;
+      showToast(`Crash interval set to ${crashInterval.options[crashInterval.selectedIndex].text}`, 'info');
+    };
+  }
+
+  const csvButton = document.getElementById('portalCsvButton');
+  const csvInput = document.getElementById('portalCsvInput');
+  if (csvButton && csvInput) {
+    csvButton.onclick = () => csvInput.click();
+    csvInput.onchange = async () => {
+      const file = csvInput.files && csvInput.files[0];
+      if (!file) return;
+      const text = await readPortalFileAsText(file);
+      const parsed = parsePortalCsv(text).map(mapPortalCsvRow).filter(Boolean);
+      if (!parsed.length) {
+        showToast('CSV did not include any drinks', 'warn');
+        csvInput.value = '';
+        return;
+      }
+      applyMarketTransaction(`Imported ${parsed.length} drinks`, () => {
+        parsed.forEach(row => upsertPortalDrinkFromImport(row));
       });
       rebuildMarketState();
-      queueSaveState('saved', `Removed ${drink.n}`);
+      PAGE_STATE.employee.search = '';
+      PAGE_STATE.employee.selectedCat = 'all';
+      PAGE_STATE.portal.selectedTab = 'start';
+      renderPortalView();
+      showToast(`Imported ${parsed.length} drinks`, 'success');
+      csvInput.value = '';
+    };
+  }
+
+  const quickName = document.getElementById('portalQuickDrinkName');
+  const quickCat = document.getElementById('portalQuickDrinkCat');
+  const quickPrice = document.getElementById('portalQuickDrinkPrice');
+  const quickFloor = document.getElementById('portalQuickDrinkFloor');
+  const quickCeiling = document.getElementById('portalQuickDrinkCeiling');
+  const quickSoldOut = document.getElementById('portalQuickDrinkSoldOut');
+  const quickAdd = document.getElementById('portalQuickDrinkAdd');
+  if (quickCat && !quickCat.value) quickCat.value = DEFAULT_CATEGORIES?.[0] || 'signature-cocktails';
+  if (quickAdd) {
+    quickAdd.onclick = () => {
+      const added = createPortalDrinkFromQuickAdd(
+        quickName?.value,
+        quickCat?.value,
+        quickPrice?.value,
+        quickFloor?.value,
+        quickCeiling?.value,
+        quickSoldOut?.checked,
+      );
+      if (!added) {
+        showToast('Enter a drink name', 'warn');
+        return;
+      }
+      PAGE_STATE.employee.search = '';
+      PAGE_STATE.employee.selectedCat = 'all';
+      renderPortalView();
+      showToast('Drink added', 'success');
+    };
+  }
+  if (quickName) {
+    quickName.onkeydown = event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      quickAdd?.click();
+    };
+  }
+
+  if (selectedTab === 'start') {
+    const search = document.getElementById('portalDrinkSearch');
+    if (search) {
+      search.value = PAGE_STATE.employee.search;
+      search.oninput = () => {
+        PAGE_STATE.employee.search = search.value;
+        renderPortalView();
+      };
+    }
+
+    const filters = workspace.querySelector('#portalCatFilters');
+    if (filters) {
+      filters.innerHTML = ['all', ...(DEFAULT_CATEGORIES || [])].map(cat => `<button class="range-chip ${PAGE_STATE.employee.selectedCat === cat ? 'active' : ''}" data-portal-cat="${cat}" type="button">${escapeHtml(cat === 'all' ? 'All drinks' : cat.replace('-', ' '))}</button>`).join('');
+      filters.querySelectorAll('[data-portal-cat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          PAGE_STATE.employee.selectedCat = btn.dataset.portalCat;
+          renderPortalView();
+        });
+      });
+    }
+
+    const controls = workspace.querySelector('#portalControls');
+    if (controls) {
+      bindPortalEmployeeControls(controls);
+
+      controls.querySelectorAll('[data-portal-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const drink = D.find(d => d.id === btn.dataset.portalToggle);
+          if (!drink) return;
+          commitEmployeeEdit(drink.id, normalizeDrinkPatch(drink, { soldOut: !drink.soldOut }), `${drink.soldOut ? 'Resumed' : 'Paused'} ${drink.n}`);
+          renderPortalView();
+        });
+      });
+
+      controls.querySelectorAll('[data-portal-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const drink = D.find(d => d.id === btn.dataset.portalRemove);
+          if (!drink) return;
+          applyMarketTransaction(`Removed ${drink.n}`, () => {
+            MARKET_SETTINGS.drinks[drink.id] = { ...(MARKET_SETTINGS.drinks[drink.id] || {}), hidden: true, soldOut: true };
+          });
+          rebuildMarketState();
+          renderPortalView();
+          showToast(`Removed ${drink.n}`, 'info');
+        });
+      });
+
+      controls.querySelectorAll('[data-portal-image-upload]').forEach(input => {
+        input.addEventListener('change', async () => {
+          const file = input.files && input.files[0];
+          const id = input.dataset.portalImageUpload;
+          const drink = D.find(d => d.id === id);
+          if (!file || !drink) return;
+          const image = await readPortalFileAsDataUrl(file);
+          commitEmployeeEdit(drink.id, normalizeDrinkPatch(drink, { image }), `Updated image for ${drink.n}`);
+          renderPortalView();
+        });
+      });
+
+      controls.querySelectorAll('[data-portal-image-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.portalImageAction;
+          const drink = D.find(d => d.id === id);
+          if (!drink) return;
+          const hasImage = !!getPortalDrinkImage(drink);
+          if (hasImage) {
+            commitEmployeeEdit(drink.id, normalizeDrinkPatch(drink, { image: '' }), `Removed image for ${drink.n}`);
+            renderPortalView();
+            return;
+          }
+          const upload = [...controls.querySelectorAll('[data-portal-image-upload]')].find(field => field.dataset.portalImageUpload === id);
+          if (upload) upload.click();
+        });
+      });
+    }
+  } else if (selectedTab === 'account') {
+    workspace.querySelectorAll('[data-portal-account-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        showToast(btn.dataset.portalAccountAction === 'manage' ? 'Subscription tools coming next' : 'Billing tools coming next', 'info');
+      });
+    });
+  }
+
+  nav.querySelectorAll('[data-portal-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      PAGE_STATE.portal.selectedTab = btn.dataset.portalTab;
       renderPortalView();
     });
   });
 
-  const addForm = workspace.querySelector('#portalAddDrink');
-  addForm.onsubmit = event => {
-    event.preventDefault();
-    const form = new FormData(addForm);
-    const name = String(form.get('name') || '').trim();
-    const cat = String(form.get('cat') || 'signature');
-    const price = Math.max(SAFE_PRICE_MIN, Number(form.get('price') || 12));
-    if (!name) return;
-    const id = `custom-${Date.now().toString(36)}`;
-    applyMarketTransaction(`Added ${name}`, () => {
-      if (!MARKET_SETTINGS.categories[cat]) MARKET_SETTINGS.categories[cat] = { label: cat.replace('-', ' '), soldOut: false };
-      MARKET_SETTINGS.drinks[id] = {
-        name,
-        cat,
-        salePrice: +price.toFixed(2),
-        floor: +(price * 0.65).toFixed(2),
-        ceiling: +(price * 1.65).toFixed(2),
-        soldOut: false,
-        custom: true,
-      };
-    });
-    rebuildMarketState();
-    PAGE_STATE.employee.search = '';
-    PAGE_STATE.employee.selectedCat = cat;
-    queueSaveState('saved', `Added ${name}`);
-    renderPortalView();
-  };
-
-  saveState.textContent = PAGE_STATE.employee.saveState === 'saved' ? 'Saved' : PAGE_STATE.employee.saveState === 'saving' ? 'Saving…' : 'Unsaved';
-  saveState.className = `save-pill ${PAGE_STATE.employee.saveState}`;
-
-  const undo = workspace.querySelector('#portalUndo');
-  undo.onclick = () => {
-    if (undoLastMarketChange()) {
-      rebuildMarketState();
-      queueSaveState('saved', 'Reverted last change');
-      renderPortalView();
-    }
-  };
-
-  workspace.querySelector('#portalOpenMarket').onclick = () => {
-    if (typeof initMode === 'function') initMode('base');
-    showToast('Market opened on the live board', 'success');
-  };
-
-  workspace.querySelector('#portalResetVenue').onclick = () => {
-    applyMarketTransaction('Reset venue to opening state', () => {
-      MARKET_SETTINGS = buildDefaultMarketSettings();
-    });
-    rebuildMarketState();
-    if (typeof initMode === 'function') initMode('base');
-    queueSaveState('saved', 'Venue reset');
-    renderPortalView();
+  signOut.onclick = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'site');
+    window.history.pushState({}, '', url);
+    setActiveAppView('site');
+    refreshAuxViews();
+    showToast('Signed out of the portal', 'info');
   };
 }
 

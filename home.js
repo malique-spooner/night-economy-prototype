@@ -20,6 +20,19 @@ function applyDecay() {
 let currentBoardView = 0;
 let storySlideIndex = 0;
 
+function getMovementLabel(drink) {
+  const price = Number(drink?.p || 0);
+  const base = Number(drink?.b || 1) || 1;
+  const delta = ((price - base) / base) * 100;
+  const orders = Number(drink?.o || 0);
+  const absDelta = Math.abs(delta);
+  if (absDelta >= 6) return 'Volatile';
+  if (delta >= 0.9 || (delta >= 0.5 && orders >= 8)) return 'Fast mover';
+  if (delta <= -0.9 || (delta <= -0.5 && orders >= 5)) return 'Stalling';
+  if (absDelta < 0.25) return 'Steady';
+  return 'Cooling';
+}
+
 const DRINK_STORY_SLIDES = [
   {
     id: 'cof',
@@ -103,11 +116,12 @@ function buildBoard(viewIdx) {
       featured.innerHTML = featuredDrinks.map((d, idx) => {
         const pct = ((d.p - d.b) / d.b * 100);
         const up = d.p >= d.b;
+        const label = getMovementLabel(d);
         return `
           <article class="feature-tile ${d.soldOut ? 'sold-out' : ''}">
             <div class="feature-tile-top">
               <span class="feature-rank">0${idx + 1}</span>
-              <span class="feature-cat">${d.cat.replace('-', ' ')}</span>
+              <span class="feature-cat">${label}</span>
             </div>
             <strong class="feature-name">${d.n}</strong>
             <div class="feature-bottom">
@@ -142,8 +156,9 @@ function buildBoard(viewIdx) {
         const pct = ((d.p - d.b) / d.b * 100).toFixed(1);
         const up = d.p >= d.b;
         const soldBadge = d.soldOut ? '<span class="val-badge">SOLD OUT</span>' : '';
+        const label = getMovementLabel(d);
         row.innerHTML = `
-          <div><div class="dname">${d.n}${soldBadge}</div><div class="dcat-sub">${d.cat.replace('-',' ')}</div></div>
+          <div><div class="dname">${d.n}${soldBadge}</div><div class="dcat-sub">${label}</div></div>
           <div class="dprice ${up?'up':'dn'}" id="p${d.id}">£${d.p.toFixed(2)}</div>
           <div class="spark-cell" id="sp${d.id}">${buildPricePositionMarkup(d)}</div>
           <div class="dpct ${up?'up':'dn'}" id="pct${d.id}">${up?'+':''}${pct}%</div>
@@ -296,7 +311,7 @@ function updateMiniSpotlight() {
 
   nameEl.textContent = drink.n;
   const subEl = document.getElementById('spotA-sub');
-  if (subEl) subEl.textContent = `${drink.cat.replace('-', ' ')} · ${drink.o > 0 ? 'live orders' : 'session snapshot'}`;
+  if (subEl) subEl.textContent = getMovementLabel(drink);
 
   const priceEl = document.getElementById('spotA-price');
   if (priceEl) priceEl.textContent = formatMoney(drink.p);
@@ -315,7 +330,7 @@ function updateMiniSpotlight() {
   if (highEl) highEl.textContent = formatMoney(high);
 
   const boardEl = document.getElementById('spotA-board');
-  if (boardEl) boardEl.textContent = drink.cat.replace('-', ' ');
+  if (boardEl) boardEl.textContent = getMovementLabel(drink);
   const moodEl = document.getElementById('spotA-mood');
   if (moodEl) moodEl.textContent = drink.p >= drink.b ? 'Live pick' : 'Good value';
 

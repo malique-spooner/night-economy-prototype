@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<link rel="stylesheet" href="styles.css?v=39">
+<link rel="stylesheet" href="styles.css?v=56">
 <style>
 .menu-toggle {
   position: fixed;
@@ -53,6 +53,10 @@
     <div class="topbar">
       <div class="brand">Night Economy</div>
       <div class="live-pill" id="pill"><div class="live-dot" id="ldot"></div><span id="stext">Market open</span></div>
+      <div class="mode-switch" id="modeSwitch" role="group" aria-label="Market state">
+        <button type="button" class="mode-chip" data-app-mode="closed">Market closed</button>
+        <button type="button" class="mode-chip" data-app-mode="crash">Crash</button>
+      </div>
       <div class="top-right">
         <div class="trade-count">Trades tonight <span id="tradeTotal">0</span></div>
         <div class="clk" id="clk">--:--:--</div>
@@ -120,7 +124,14 @@
     </div>
   </div>
 
-  <button class="menu-toggle" id="crashBtn">⚡ Crash</button>
+  <div class="closed-layer" id="closedLayer" aria-hidden="true">
+    <div class="closed-rays"></div>
+    <div class="closed-card">
+      <div class="closed-topline">Market closed</div>
+      <div class="closed-title" id="closedTitle">Market closed</div>
+      <div class="closed-copy" id="closedCopy">The market is not live right now.</div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -138,9 +149,9 @@
 </style>
 
 <script src="data.js?v=4"></script>
-<script src="shared.js?v=13"></script>
-<script src="pages.js?v=24"></script>
-<script src="home.js?v=10"></script>
+<script src="shared.js?v=14"></script>
+<script src="pages.js?v=34"></script>
+<script src="home.js?v=11"></script>
 <script src="crash.js?v=9"></script>
 
 <script>
@@ -148,6 +159,12 @@ let currentMode = 'base';
 let clockInterval, decayInterval, panelInterval, boardInterval, orderSchedule;
 let activeTimers = []; // track all setTimeout handles for cleanup
 let demoCycleTimeout;
+
+function syncModeSwitch() {
+  document.querySelectorAll('[data-app-mode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.appMode === currentMode);
+  });
+}
 
 function resetState() {
   if (clockInterval) clearInterval(clockInterval);
@@ -184,6 +201,7 @@ function resetState() {
   document.getElementById('warnBanner').classList.remove('show');
   const pill = document.getElementById('pill');
   pill.classList.remove('crash');
+  hideMarketClosed();
 
   // Reset event card elements
   ['evc', 'epre', 'ehl', 'esub'].forEach(id => {
@@ -208,6 +226,29 @@ function resetState() {
   rebuildMarketState();
 
   document.getElementById('stext').textContent = 'Market open';
+}
+
+function showMarketClosed(title = 'Market closed', copy = 'The market is not live right now.') {
+  const layer = document.getElementById('closedLayer');
+  const titleEl = document.getElementById('closedTitle');
+  const copyEl = document.getElementById('closedCopy');
+  const pill = document.getElementById('pill');
+  const stext = document.getElementById('stext');
+  if (titleEl) titleEl.textContent = title;
+  if (copyEl) copyEl.textContent = copy;
+  if (pill) pill.classList.remove('crash');
+  if (stext) stext.textContent = title;
+  if (layer) {
+    layer.classList.add('show');
+    layer.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function hideMarketClosed() {
+  const layer = document.getElementById('closedLayer');
+  if (!layer) return;
+  layer.classList.remove('show');
+  layer.setAttribute('aria-hidden', 'true');
 }
 
 function t(fn, ms) {
@@ -249,6 +290,7 @@ function scheduleOrders(interval = [1800, 5800]) {
 function initMode(mode) {
   currentMode = mode;
   resetState();
+  syncModeSwitch();
 
   const root = document.querySelector('.root');
   root.className = 'root';
@@ -294,6 +336,14 @@ function initMode(mode) {
       t(() => startCrash(), 5000);
       break;
     }
+
+    /* ──────── CLOSED / ENDED ──────── */
+    case 'closed':
+      showMarketClosed('Market closed', 'The market has been stopped. Prices are frozen until it resumes.');
+      break;
+    case 'ended':
+      showMarketClosed('Market closed', 'The session has ended and the market is now closed.');
+      break;
   }
 
 }
@@ -303,8 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const bootParams = new URLSearchParams(window.location.search);
   initMode(bootParams.get('mode') === 'crash' ? 'crash' : 'base');
 
-  document.getElementById('crashBtn').addEventListener('click', () => {
-    initMode('crash');
+  document.querySelectorAll('[data-app-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      initMode(btn.dataset.appMode || 'base');
+    });
   });
 
   // Board dots click handlers
@@ -322,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
     threeUpdate();
   }
   animate();
+  syncModeSwitch();
 
   // Resize handler
   window.addEventListener('resize', () => {
