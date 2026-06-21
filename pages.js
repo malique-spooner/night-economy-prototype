@@ -900,14 +900,19 @@ function getDrinkBaseline(drinkId) {
 function hasDrinkChanged(drink) {
   const baseline = getDrinkBaseline(drink.id);
   if (!baseline) return false;
-  return ['name', 'cat', 'salePrice', 'floor', 'ceiling', 'soldOut'].some(key => {
+  return ['name', 'cat', 'salePrice', 'floor', 'ceiling', 'soldOut', 'priority'].some(key => {
     const current = key === 'name' ? drink.n
       : key === 'cat' ? drink.cat
       : key === 'salePrice' ? drink.b
+      : key === 'priority' ? !!MARKET_SETTINGS.drinks[drink.id]?.priority
       : drink[key];
     const previous = baseline[key];
     return String(current) !== String(previous);
   });
+}
+
+function getPriorityDrinkCount(excludeId = null) {
+  return D.filter(d => d.id !== excludeId && !!MARKET_SETTINGS.drinks[d.id]?.priority).length;
 }
 
 function queueSaveState(state, message = '') {
@@ -1614,6 +1619,7 @@ function bindPortalEmployeeControls(controls) {
         floor: +(drink.b * 0.65).toFixed(2),
         ceiling: +(drink.b * 1.65).toFixed(2),
         soldOut: false,
+        priority: false,
       }, `Reset ${drink.n}`);
       renderPortalView();
     });
@@ -1649,6 +1655,8 @@ function renderPortalDrinkRow(d) {
   const changed = hasDrinkChanged(d);
   const cats = [...new Set([...(DEFAULT_CATEGORIES || []), d.cat].filter(Boolean))];
   const image = getPortalDrinkImage(d);
+  const priorityEnabled = !!MARKET_SETTINGS.drinks[d.id]?.priority;
+  const priorityLimitReached = !priorityEnabled && getPriorityDrinkCount() >= 10;
   return `
     <article class="portal-drink-row ${d.soldOut ? 'paused' : ''} ${changed ? 'changed' : ''}" data-drink-row="${escapeHtml(d.id)}">
       <div class="portal-drink-image-action">
@@ -1666,7 +1674,13 @@ function renderPortalDrinkRow(d) {
         <input type="file" accept="image/*" hidden data-portal-image-upload="${escapeHtml(d.id)}">
       </div>
       <div class="portal-drink-live">
-        <button class="portal-live-toggle ${d.soldOut ? 'off' : 'on'}" data-portal-toggle="${escapeHtml(d.id)}" type="button">${d.soldOut ? 'Paused' : 'Live'}</button>
+        <div class="portal-live-actions">
+          <button class="portal-live-toggle ${d.soldOut ? 'off' : 'on'}" data-portal-toggle="${escapeHtml(d.id)}" type="button">${d.soldOut ? 'Paused' : 'Live'}</button>
+          <label class="portal-priority-toggle ${priorityLimitReached ? 'disabled' : ''}" title="${priorityEnabled ? 'High priority item' : 'Mark as high priority'}">
+            <input type="checkbox" data-portal-priority="${escapeHtml(d.id)}" ${priorityEnabled ? 'checked' : ''} ${priorityLimitReached ? 'disabled' : ''}>
+            <span>Priority</span>
+          </label>
+        </div>
       </div>
       <label class="portal-drink-name">
         <span>Drink</span>
@@ -1913,6 +1927,7 @@ function upsertPortalDrinkFromImport(importRow) {
     floor: Number.isFinite(importRow.floor) ? importRow.floor : existing.floor ?? +(fallbackSale * 0.65).toFixed(2),
     ceiling: Number.isFinite(importRow.ceiling) ? importRow.ceiling : existing.ceiling ?? +(fallbackSale * 1.65).toFixed(2),
     soldOut: !!importRow.soldOut,
+    priority: !!existing.priority,
     image: importRow.image || existing.image || '',
   };
   if (!MARKET_SETTINGS.categories[cat]) {
@@ -1941,6 +1956,7 @@ function createPortalDrinkFromQuickAdd(name, cat, salePrice, floorValue, ceiling
       floor,
       ceiling,
       soldOut: !!soldOut,
+      priority: false,
       image: '',
     };
     if (!MARKET_SETTINGS.categories[nextCat]) {
@@ -2148,6 +2164,22 @@ function renderPortalView() {
           const drink = D.find(d => d.id === btn.dataset.portalToggle);
           if (!drink) return;
           commitEmployeeEdit(drink.id, normalizeDrinkPatch(drink, { soldOut: !drink.soldOut }), `${drink.soldOut ? 'Resumed' : 'Paused'} ${drink.n}`);
+          renderPortalView();
+        });
+      });
+
+      controls.querySelectorAll('[data-portal-priority]').forEach(input => {
+        input.addEventListener('change', () => {
+          const drink = D.find(d => d.id === input.dataset.portalPriority);
+          if (!drink) return;
+          const wantsPriority = input.checked;
+          const selectedCount = getPriorityDrinkCount(drink.id);
+          if (wantsPriority && selectedCount >= 10) {
+            input.checked = false;
+            showToast('You can only mark 10 items as priority', 'warn');
+            return;
+          }
+          commitEmployeeEdit(drink.id, { priority: wantsPriority }, `${wantsPriority ? 'Marked' : 'Cleared'} priority for ${drink.n}`);
           renderPortalView();
         });
       });
@@ -2638,6 +2670,7 @@ function renderEmployeeView() {
               floor: +(src.b * 0.65).toFixed(2),
               ceiling: +(src.b * 1.65).toFixed(2),
               soldOut: false,
+              priority: false,
             };
           });
         }, `${cat.replace('-', ' ')} reset`);

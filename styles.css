@@ -3095,6 +3095,13 @@ body[data-app-view='portal'] .portal-header h1{
   gap:6px;
 }
 
+.portal-live-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
 .portal-drink-live > span,
 .portal-drink-name > span,
 .portal-drink-cat > span,
@@ -3109,12 +3116,42 @@ body[data-app-view='portal'] .portal-header h1{
 .portal-live-toggle{
   border:none;
   border-radius:999px;
-  padding:10px 11px;
+  padding:10px 9px;
   font-family:'DM Mono',monospace;
   font-size:10px;
   letter-spacing:0.14em;
   text-transform:uppercase;
   cursor:pointer;
+  min-width:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+}
+
+.portal-priority-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:#6d7f90;
+  white-space:nowrap;
+  cursor:pointer;
+}
+
+.portal-priority-toggle input{
+  width:14px;
+  height:14px;
+  margin:0;
+  accent-color:#101814;
+}
+
+.portal-priority-toggle.disabled{
+  opacity:0.45;
+  cursor:not-allowed;
 }
 
 .portal-live-toggle.on{
@@ -4459,6 +4496,7 @@ body[data-app-view='portal'] .portal-drink-live span{
 
 body[data-app-view='portal'] .portal-live-toggle{
   min-height:34px;
+  min-width:34px;
   border-radius:999px;
 }
 
@@ -5257,6 +5295,7 @@ body[data-app-view='portal'] .portal-drink-live span{
 
 body[data-app-view='portal'] .portal-live-toggle{
   min-height:34px;
+  min-width:34px;
   border-radius:999px;
 }
 
@@ -5734,8 +5773,8 @@ body[data-app-view='portal'] .portal-money-field button{
 
 body[data-app-view='portal'] .portal-live-toggle{
   min-height:24px;
-  min-width:42px;
-  padding:0 7px;
+  min-width:34px;
+  padding:0 6px;
   border-radius:999px;
   font-size:9px;
   letter-spacing:0.12em;

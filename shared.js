@@ -52,6 +52,7 @@ function buildDefaultMarketSettings() {
       floor: +(d.b * 0.65).toFixed(2),
       ceiling: +(d.b * 1.65).toFixed(2),
       soldOut: false,
+      priority: false,
       image: d.image || '',
     };
   });
