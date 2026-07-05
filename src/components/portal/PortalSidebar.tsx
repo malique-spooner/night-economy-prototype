@@ -1,9 +1,13 @@
+import type { ReactNode } from "react";
+
 type Props = {
+  authSlot?: ReactNode;
   liveCount: number;
+  onSignOut: () => void;
   totalCount: number;
 };
 
-export function PortalSidebar({ liveCount, totalCount }: Props) {
+export function PortalSidebar({ authSlot, liveCount, onSignOut, totalCount }: Props) {
   return (
     <aside className="portal-sidebar">
       <div className="portal-sidebar-brand">
@@ -24,8 +28,9 @@ export function PortalSidebar({ liveCount, totalCount }: Props) {
           <small>Venue settings</small>
         </button>
       </nav>
+      {authSlot}
       <div className="portal-sidebar-foot">
-        <button className="portal-signout" type="button">Sign out</button>
+        <button className="portal-signout" type="button" onClick={onSignOut}>Sign out</button>
       </div>
     </aside>
   );

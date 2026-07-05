@@ -6037,6 +6037,42 @@ body[data-app-view='portal'] .portal-drink-row .portal-drink-image-action{
   align-self:center;
 }
 
+body[data-app-view='portal'] .portal-auth-form{
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+}
+
+body[data-app-view='portal'] .portal-auth-form input{
+  min-height:38px;
+  width:100%;
+  border:1px solid rgba(245,240,230,0.12);
+  border-radius:10px;
+  background:rgba(255,255,255,0.08);
+  color:#f5f0e6;
+  padding:0 10px;
+}
+
+body[data-app-view='portal'] .portal-auth-form input::placeholder{
+  color:rgba(245,240,230,0.45);
+}
+
+body[data-app-view='portal'] .portal-auth-form button{
+  min-height:38px;
+  border:none;
+  border-radius:999px;
+  background:#b7ff83;
+  color:#101814;
+  font-weight:800;
+  cursor:pointer;
+}
+
+body[data-app-view='portal'] .portal-auth-form button:disabled,
+body[data-app-view='portal'] .portal-auth-form input:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
+
 @media (max-width: 1100px){
   body[data-app-view='portal'] .portal-drink-row{
     grid-template-columns:34px minmax(72px,0.42fr) minmax(108px,1fr) minmax(88px,0.68fr) repeat(3,minmax(80px,0.48fr)) 50px;
