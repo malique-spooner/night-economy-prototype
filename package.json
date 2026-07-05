@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:production": "npm run check:env && npm run build",
     "check:env": "node scripts/validate-env.mjs",
+    "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "vitest run",

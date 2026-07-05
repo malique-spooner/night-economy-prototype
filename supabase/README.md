@@ -37,6 +37,12 @@ Apply migrations in order:
 003_realtime_market.sql
 ```
 
+To print one reviewed SQL bundle for the Supabase SQL editor:
+
+```bash
+npm run supabase:sql
+```
+
 Then set these public frontend variables in `.env.local` and Cloudflare Pages:
 
 ```text
