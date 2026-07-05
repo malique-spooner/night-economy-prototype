@@ -26,3 +26,22 @@ Use `owner` or `admin` for venue settings. Use `staff` for market product edits.
 ## Realtime
 
 `003_realtime_market.sql` adds `venues` and `market_products` to the `supabase_realtime` publication. This lets the TV board, mobile menu, and portal refresh from the same live market state after a product or venue row changes.
+
+## Apply Order
+
+Apply migrations in order:
+
+```text
+001_initial.sql
+002_auth_rls.sql
+003_realtime_market.sql
+```
+
+Then set these public frontend variables in `.env.local` and Cloudflare Pages:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+```
+
+Run `npm run check:env` before production deployment.

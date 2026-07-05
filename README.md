@@ -58,7 +58,7 @@ Never expose `SUPABASE_SERVICE_ROLE_KEY` in the browser or Cloudflare Pages fron
 Build command:
 
 ```bash
-npm run build
+npm run build:production
 ```
 
 Build output directory:
@@ -73,3 +73,5 @@ Frontend variables:
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
+
+Local prototype builds can still use `npm run build`. Production deploys should use `npm run build:production` so missing Supabase config fails before Cloudflare publishes the site.
