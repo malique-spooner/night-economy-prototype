@@ -8,6 +8,21 @@ export type MarketState = {
   source: "seed" | "supabase";
 };
 
+export type MarketProductPatch = Partial<
+  Pick<
+    MarketProduct,
+    | "name"
+    | "category"
+    | "basePriceMinor"
+    | "currentPriceMinor"
+    | "floorPriceMinor"
+    | "ceilingPriceMinor"
+    | "isLive"
+    | "isSoldOut"
+    | "priority"
+  >
+>;
+
 export async function getMarketState(venueSlug: string): Promise<MarketState> {
   if (!supabase) return { venue: seedVenue, products: seedProducts, source: "seed" };
 
@@ -43,5 +58,32 @@ export async function getMarketState(venueSlug: string): Promise<MarketState> {
       priority: row.priority,
     })),
     source: "supabase",
+  };
+}
+
+export async function updateMarketProduct(productId: string, patch: MarketProductPatch) {
+  if (!supabase) return { persisted: false as const };
+
+  const rowPatch = toMarketProductRowPatch(patch);
+  if (!Object.keys(rowPatch).length) return { persisted: true as const };
+
+  const { error } = await supabase.from("market_products").update(rowPatch).eq("id", productId);
+  if (error) throw error;
+
+  return { persisted: true as const };
+}
+
+function toMarketProductRowPatch(patch: MarketProductPatch) {
+  return {
+    ...(patch.name !== undefined ? { display_name: patch.name } : {}),
+    ...(patch.category !== undefined ? { category: patch.category } : {}),
+    ...(patch.basePriceMinor !== undefined ? { base_price_minor: patch.basePriceMinor } : {}),
+    ...(patch.currentPriceMinor !== undefined ? { current_price_minor: patch.currentPriceMinor } : {}),
+    ...(patch.floorPriceMinor !== undefined ? { floor_price_minor: patch.floorPriceMinor } : {}),
+    ...(patch.ceilingPriceMinor !== undefined ? { ceiling_price_minor: patch.ceilingPriceMinor } : {}),
+    ...(patch.isLive !== undefined ? { is_live: patch.isLive } : {}),
+    ...(patch.isSoldOut !== undefined ? { is_sold_out: patch.isSoldOut } : {}),
+    ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+    updated_at: new Date().toISOString(),
   };
 }

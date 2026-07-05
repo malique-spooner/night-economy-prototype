@@ -2,17 +2,26 @@ import { formatInputMoney } from "./portalHelpers";
 
 type Props = {
   label: string;
+  onChange: (valueMinor: number, options?: { persist?: boolean }) => void;
   valueMinor: number;
 };
 
-export function PortalMoneyField({ label, valueMinor }: Props) {
+const stepMinor = 50;
+
+export function PortalMoneyField({ label, onChange, valueMinor }: Props) {
   return (
     <label className="portal-money-field">
       <span>{label}</span>
       <div>
-        <button type="button">−</button>
-        <input type="number" step="0.01" value={formatInputMoney(valueMinor)} readOnly />
-        <button type="button">+</button>
+        <button type="button" onClick={() => onChange(Math.max(0, valueMinor - stepMinor))}>−</button>
+        <input
+          type="number"
+          step="0.01"
+          value={formatInputMoney(valueMinor)}
+          onChange={event => onChange(Math.round(Number(event.target.value || 0) * 100), { persist: false })}
+          onBlur={event => onChange(Math.round(Number(event.target.value || 0) * 100))}
+        />
+        <button type="button" onClick={() => onChange(valueMinor + stepMinor)}>+</button>
       </div>
     </label>
   );
