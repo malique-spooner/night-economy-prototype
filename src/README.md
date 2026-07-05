@@ -13,3 +13,12 @@ engine      pricing/business logic
 supabase    database/auth access
 data        seed fallback data
 ```
+
+Page rule:
+
+```text
+pages/Foo.tsx should compose sections.
+components/foo/* should hold the readable section markup.
+```
+
+Avoid recreating the old `pages.js` pattern as one large TSX file.

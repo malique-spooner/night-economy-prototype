@@ -70,8 +70,13 @@ on conflict (id) do nothing;
 insert into public.market_products
   (id, venue_id, market_symbol, display_name, category, base_price_minor, current_price_minor, floor_price_minor, ceiling_price_minor, priority)
 values
-  ('mp_cem', 'ven_demo', 'CEM', 'Classic Espresso Martini', 'classic-cocktails', 1200, 1200, 800, 1800, true),
-  ('mp_cmar', 'ven_demo', 'CMAR', 'Classic Margarita', 'classic-cocktails', 1200, 1200, 800, 1800, false),
-  ('mp_t75', 'ven_demo', 'T75', 'The 75th Peel', 'signature-cocktails', 1400, 1400, 950, 2100, false),
-  ('mp_wb', 'ven_demo', 'WB', 'Woodland Bloom', 'mocktails', 800, 800, 600, 1100, false)
+  ('mp_cem', 'ven_demo', 'CEM', 'Classic Espresso Martini', 'classic-cocktails', 1200, 1320, 800, 1800, true),
+  ('mp_cmar', 'ven_demo', 'CMAR', 'Classic Margarita', 'classic-cocktails', 1200, 1140, 800, 1800, false),
+  ('mp_t75', 'ven_demo', 'T75', 'The 75th Peel', 'signature-cocktails', 1400, 1510, 950, 2100, false),
+  ('mp_wb', 'ven_demo', 'WB', 'Woodland Bloom', 'mocktails', 800, 720, 600, 1100, false),
+  ('mp_negroni', 'ven_demo', 'NEG', 'House Negroni', 'classic-cocktails', 1250, 1375, 850, 1850, false),
+  ('mp_spritz', 'ven_demo', 'SPZ', 'Aperitivo Spritz', 'spritz', 1050, 990, 750, 1500, false),
+  ('mp_mojito', 'ven_demo', 'MOJ', 'Garden Mojito', 'margarita', 1100, 1190, 800, 1650, false),
+  ('mp_old', 'ven_demo', 'OLD', 'Old Fashioned', 'old-fashioned', 1300, 1260, 950, 1900, false),
+  ('mp_bloody', 'ven_demo', 'BLD', 'Bloody Mary', 'bloody-mary', 1000, 1080, 700, 1450, false)
 on conflict (id) do nothing;
