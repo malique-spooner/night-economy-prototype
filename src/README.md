@@ -21,4 +21,12 @@ pages/Foo.tsx should compose sections.
 components/foo/* should hold the readable section markup.
 ```
 
+Current component groups:
+
+```text
+components/site    site/landing sections
+components/tv      room display sections
+components/mobile  customer menu sections
+```
+
 Avoid recreating the old `pages.js` pattern as one large TSX file.
