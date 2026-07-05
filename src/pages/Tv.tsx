@@ -4,7 +4,7 @@ import { MarketBoard } from "../components/tv/MarketBoard";
 import { TvBackground } from "../components/tv/TvBackground";
 import { TvStoryPanel } from "../components/tv/TvStoryPanel";
 import { TvTopBar } from "../components/tv/TvTopBar";
-import { getMarketState, type MarketState } from "../supabase/market";
+import { useMarketState } from "../hooks/useMarketState";
 import { PageSwitcher } from "./PageSwitcher";
 
 type Props = {
@@ -12,18 +12,15 @@ type Props = {
 };
 
 export function Tv({ venueSlug }: Props) {
-  const [state, setState] = useState<MarketState | null>(null);
+  const { error, state } = useMarketState(venueSlug);
   const [clock, setClock] = useState(() => formatClock(new Date()));
-
-  useEffect(() => {
-    void getMarketState(venueSlug).then(setState);
-  }, [venueSlug]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(formatClock(new Date())), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
+  if (error) return <main className="page">Could not load market: {error}</main>;
   if (!state) return <main className="page">Loading market...</main>;
 
   const sourceLabel = state.source === "supabase" ? "Live data" : "Seed fallback";

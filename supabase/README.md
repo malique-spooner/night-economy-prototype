@@ -22,3 +22,7 @@ on conflict (venue_id, user_id) do update set role = excluded.role;
 ```
 
 Use `owner` or `admin` for venue settings. Use `staff` for market product edits.
+
+## Realtime
+
+`003_realtime_market.sql` adds `venues` and `market_products` to the `supabase_realtime` publication. This lets the TV board, mobile menu, and portal refresh from the same live market state after a product or venue row changes.

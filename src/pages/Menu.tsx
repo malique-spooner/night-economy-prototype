@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
 import { MobileCategoryRail } from "../components/mobile/MobileCategoryRail";
 import { MobileHero } from "../components/mobile/MobileHero";
 import { MobileMarketBrief } from "../components/mobile/MobileMarketBrief";
 import { MobileMarketSection } from "../components/mobile/MobileMarketSection";
 import { categoryLabel, groupProductsByCategory } from "../components/tv/tvHelpers";
-import { getMarketState, type MarketState } from "../supabase/market";
+import { useMarketState } from "../hooks/useMarketState";
 import { PageSwitcher } from "./PageSwitcher";
 
 type Props = {
@@ -12,12 +11,9 @@ type Props = {
 };
 
 export function Menu({ venueSlug }: Props) {
-  const [state, setState] = useState<MarketState | null>(null);
+  const { error, state } = useMarketState(venueSlug);
 
-  useEffect(() => {
-    void getMarketState(venueSlug).then(setState);
-  }, [venueSlug]);
-
+  if (error) return <main className="page">Could not load menu: {error}</main>;
   if (!state) return <main className="page">Loading menu...</main>;
 
   const groups = groupProductsByCategory(state.products);

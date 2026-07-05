@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import { PortalAuthPanel } from "../components/portal/PortalAuthPanel";
 import { PortalSidebar } from "../components/portal/PortalSidebar";
 import { PortalStartPage } from "../components/portal/PortalStartPage";
+import { useMarketState } from "../hooks/useMarketState";
 import { supabaseStatus } from "../supabase/client";
 import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../supabase/auth";
 import {
-  getMarketState,
   updateMarketProduct,
   type MarketProductPatch,
-  type MarketState,
 } from "../supabase/market";
 import { PageSwitcher } from "./PageSwitcher";
 
@@ -17,16 +16,12 @@ type Props = {
 };
 
 export function Portal({ venueSlug }: Props) {
-  const [state, setState] = useState<MarketState | null>(null);
+  const { error, setState, state } = useMarketState(venueSlug);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [lastSavedMessage, setLastSavedMessage] = useState("");
-
-  useEffect(() => {
-    void getMarketState(venueSlug).then(setState);
-  }, [venueSlug]);
 
   useEffect(() => {
     void refreshSession();
@@ -35,6 +30,7 @@ export function Portal({ venueSlug }: Props) {
     });
   }, []);
 
+  if (error) return <main className="page">Could not load portal: {error}</main>;
   if (!state) return <main className="page">Loading portal...</main>;
 
   const liveCount = state.products.filter(product => !product.isSoldOut && product.isLive).length;
