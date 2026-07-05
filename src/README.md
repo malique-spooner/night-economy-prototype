@@ -27,6 +27,7 @@ Current component groups:
 components/site    site/landing sections
 components/tv      room display sections
 components/mobile  customer menu sections
+components/portal  operator portal sections
 ```
 
 Avoid recreating the old `pages.js` pattern as one large TSX file.
