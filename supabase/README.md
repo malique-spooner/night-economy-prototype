@@ -35,6 +35,8 @@ Use `owner` or `admin` for venue settings. Use `staff` for market product edits.
 supabase functions deploy market-cycle
 ```
 
+Local `npm run check` runs a static function guard with `npm run supabase:functions`. It does not replace Supabase CLI/Deno deployment verification, but it catches missing REST response checks and accidental hard-coded secrets.
+
 ## Apply Order
 
 Apply migrations in order:

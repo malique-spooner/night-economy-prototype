@@ -1,0 +1,60 @@
+import { readFileSync } from "node:fs";
+
+const functionFiles = ["supabase/functions/market-cycle/index.ts"];
+const checks = [
+  {
+    label: "requires scheduler secret header support",
+    pattern: /x-night-economy-scheduler-secret/,
+  },
+  {
+    label: "reads service-role key only inside Edge Function",
+    pattern: /Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)/,
+  },
+  {
+    label: "wraps handler errors as JSON",
+    pattern: /catch \(error\)[\s\S]+return json\(\{ error:/,
+  },
+  {
+    label: "checks Supabase REST response status",
+    pattern: /if \(!response\.ok\)/,
+  },
+  {
+    label: "writes market price snapshots",
+    pattern: /market_price_snapshots/,
+  },
+  {
+    label: "uses sales velocity pricing input",
+    pattern: /sales_velocity/,
+  },
+];
+
+const forbiddenPatterns = [
+  {
+    label: "hard-coded Supabase service key",
+    pattern: /eyJhbGciOi|service_role_[a-z0-9]{16,}/i,
+  },
+  {
+    label: "local Supabase URL in deployed function",
+    pattern: /localhost:54321|127\.0\.0\.1:54321/,
+  },
+];
+
+for (const file of functionFiles) {
+  const source = readFileSync(file, "utf8");
+  const failures = [
+    ...checks
+      .filter(check => !check.pattern.test(source))
+      .map(check => `${file}: missing ${check.label}`),
+    ...forbiddenPatterns
+      .filter(check => check.pattern.test(source))
+      .map(check => `${file}: contains ${check.label}`),
+  ];
+
+  if (failures.length) {
+    console.error("Supabase function verification failed:");
+    failures.forEach(failure => console.error(`- ${failure}`));
+    process.exit(1);
+  }
+}
+
+console.log("Supabase function verification passed.");
