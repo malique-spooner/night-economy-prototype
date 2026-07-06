@@ -55,6 +55,13 @@ Never expose `SUPABASE_SERVICE_ROLE_KEY` in the browser or Cloudflare Pages fron
 
 ## Cloudflare Pages
 
+Cloudflare Pages config lives in `wrangler.jsonc`:
+
+```text
+name: night-economy-prototype
+pages_build_output_dir: ./dist
+```
+
 Build command:
 
 ```bash
@@ -77,6 +84,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 Local prototype builds can still use `npm run build`. Production deploys should use `npm run build:production` so missing Supabase config fails before Cloudflare publishes the site.
 
 `public/_redirects` keeps `/` on the current prototype while serving React routes for `/tv/*`, `/menu/*`, `/app/*`, and `/venue/*`.
+
+Local `npm run check` verifies the Cloudflare config with `npm run cloudflare:config`.
 
 ## Pre-Deploy Check
 
