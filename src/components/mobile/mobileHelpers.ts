@@ -21,6 +21,16 @@ export function mobileTickerSymbol(productName: string) {
     .toUpperCase();
 }
 
+export function mobileCategorySectionId(category: string) {
+  const slug = category
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `mobile-category-${slug || "menu"}`;
+}
+
 export function mobileAccent(product: MarketProduct) {
   const change = Math.abs(productChangePercent(product));
   if (change >= 9) return "ruby";

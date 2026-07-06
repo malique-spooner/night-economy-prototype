@@ -2,6 +2,7 @@ import { MobileCategoryRail } from "../components/mobile/MobileCategoryRail";
 import { MobileHero } from "../components/mobile/MobileHero";
 import { MobileMarketBrief } from "../components/mobile/MobileMarketBrief";
 import { MobileMarketSection } from "../components/mobile/MobileMarketSection";
+import { mobileCategorySectionId } from "../components/mobile/mobileHelpers";
 import { categoryLabel, groupProductsByCategory } from "../components/tv/tvHelpers";
 import { useMarketState } from "../hooks/useMarketState";
 import { PageSwitcher } from "./PageSwitcher";
@@ -17,7 +18,10 @@ export function Menu({ venueSlug }: Props) {
   if (!state) return <main className="page">Loading menu...</main>;
 
   const groups = groupProductsByCategory(state.products);
-  const categoryLabels = groups.map(([category]) => categoryLabel(category));
+  const categoryLinks = groups.map(([category]) => ({
+    id: mobileCategorySectionId(category),
+    label: categoryLabel(category),
+  }));
 
   return (
     <>
@@ -27,7 +31,7 @@ export function Menu({ venueSlug }: Props) {
           <MobileHero />
           <main className="mobile-menu">
             <MobileMarketBrief products={state.products} />
-            <MobileCategoryRail categories={categoryLabels} />
+            <MobileCategoryRail categories={categoryLinks} />
             {groups.map(([category, products]) => (
               <MobileMarketSection category={category} products={products} venue={state.venue} key={category} />
             ))}
