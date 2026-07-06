@@ -1,9 +1,4 @@
-const slides = [
-  ["display", "./?view=tv", "Night Economy TV view preview", false],
-  ["mobile", "./?view=mobile", "Night Economy mobile view preview", true],
-  ["portal", "./?view=portal", "Night Economy portal preview", false],
-  ["event", "./?view=tv&mode=crash", "Night Economy crash preview", false],
-] as const;
+import { siteProductSlides } from "../../content/siteContent";
 
 export function SiteProductFlow() {
   return (
@@ -14,8 +9,8 @@ export function SiteProductFlow() {
         <p>Shuffle through the live room display, guest menu, operator portal, and market event view.</p>
       </div>
       <div className="site-deck-track" data-drag-scroll aria-label="Venue stack carousel">
-        {slides.map(([tone, src, title, phone]) => (
-          <DeckSlide tone={tone} src={src} title={title} phone={phone} key={tone} />
+        {siteProductSlides.map(slide => (
+          <DeckSlide tone={slide.tone} src={slide.src} title={slide.title} phone={slide.phone} key={slide.tone} />
         ))}
       </div>
     </section>

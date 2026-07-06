@@ -1,8 +1,4 @@
-const reasons = [
-  ["01", "Instantly legible", "Big prices and clear movement make the board readable from across the bar."],
-  ["02", "Calm under pressure", "Guardrails keep the game lively without letting prices run away."],
-  ["03", "Guides demand, not just price", "Spotlights and events help move guests toward the right drinks at the right time."],
-] as const;
+import { siteReasons } from "../../content/siteContent";
 
 export function SiteWhy() {
   return (
@@ -14,11 +10,11 @@ export function SiteWhy() {
             <h2>Software the room can feel.</h2>
             <p>Guests see momentum. Staff see where to steer demand. Operators keep the market playful, profitable, and under control.</p>
             <div className="site-why-panel" aria-label="Why Night Economy works">
-              {reasons.map(([num, title, copy], index) => (
-                <article className={`site-why-card ${index === 0 ? "site-why-card-primary" : ""}`} key={num}>
-                  <span>{num}</span>
-                  <strong>{title}</strong>
-                  <p>{copy}</p>
+              {siteReasons.map((reason, index) => (
+                <article className={`site-why-card ${index === 0 ? "site-why-card-primary" : ""}`} key={reason.number}>
+                  <span>{reason.number}</span>
+                  <strong>{reason.title}</strong>
+                  <p>{reason.copy}</p>
                 </article>
               ))}
             </div>
@@ -40,7 +36,7 @@ export function SiteWhy() {
                   <i></i>
                   <i></i>
                 </div>
-                <div className="site-display-note">Big prices and clear movement make the board readable from across the bar.</div>
+                <div className="site-display-note">{siteReasons[0].copy}</div>
               </div>
             </div>
           </div>

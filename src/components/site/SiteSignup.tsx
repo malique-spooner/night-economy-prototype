@@ -1,8 +1,4 @@
-const plans = [
-  ["starter", "Starter", "Pilot venue"],
-  ["growth", "Growth", "Live venue"],
-  ["premium", "Premium", "Group rollout"],
-] as const;
+import { defaultSitePlanId, sitePlans } from "../../content/siteContent";
 
 export function SiteSignup() {
   return (
@@ -14,10 +10,10 @@ export function SiteSignup() {
       </div>
       <div className="site-signup-panel">
         <div className="site-pricing-minimal">
-          {plans.map(([id, name, copy]) => (
-            <article className={`site-price-pill ${id === "growth" ? "active" : ""}`} key={id}>
-              <strong>{name}</strong>
-              <span>{copy}</span>
+          {sitePlans.map(plan => (
+            <article className={`site-price-pill ${plan.id === defaultSitePlanId ? "active" : ""}`} key={plan.id}>
+              <strong>{plan.name}</strong>
+              <span>{plan.copy}</span>
             </article>
           ))}
         </div>
@@ -36,10 +32,10 @@ export function SiteSignup() {
           </label>
           <label>
             <span>Plan</span>
-            <select defaultValue="growth">
-              {plans.map(([id, name]) => (
-                <option value={id} key={id}>
-                  {name}
+            <select defaultValue={defaultSitePlanId}>
+              {sitePlans.map(plan => (
+                <option value={plan.id} key={plan.id}>
+                  {plan.name}
                 </option>
               ))}
             </select>
