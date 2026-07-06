@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { defaultSitePlanId, sitePlans } from "../../content/siteContent";
+import { prepareSiteLead } from "../../supabase/leadForm";
 import { createSiteLead, type SiteLeadPlan } from "../../supabase/leads";
 
 const initialForm = {
@@ -17,15 +18,16 @@ export function SiteSignup() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!form.venueName.trim() || !form.ownerName.trim() || !form.email.trim()) {
+    const preparedLead = prepareSiteLead({ ...form, plan: selectedPlan });
+    if (!preparedLead.ok) {
       setStatus("error");
-      setMessage("Add the venue, owner, and email before submitting.");
+      setMessage(preparedLead.message);
       return;
     }
 
     try {
       setStatus("submitting");
-      const result = await createSiteLead({ ...form, plan: selectedPlan });
+      const result = await createSiteLead(preparedLead.payload);
 
       setStatus("success");
       setMessage(
