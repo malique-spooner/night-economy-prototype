@@ -87,3 +87,4 @@ npm run smoke:preview
 ```
 
 It builds the app, starts Vite's production preview server, and checks the current prototype plus the four React migration views.
+It also validates the Cloudflare Pages redirect order so production venue routes hit the React app before the prototype catch-all.

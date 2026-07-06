@@ -93,17 +93,54 @@ function sleep(ms) {
 
 async function assertCloudflareRedirects() {
   const redirects = await readFile("dist/_redirects", "utf8");
-  const requiredRules = [
-    "/tv/* /react-preview.html 200",
-    "/menu/* /react-preview.html 200",
-    "/app/* /react-preview.html 200",
-    "/venue/* /react-preview.html 200",
-    "/* /index.html 200",
+  const rules = parseRedirectRules(redirects);
+  const expectedRules = [
+    { source: "/tv/*", target: "/react-preview.html", status: "200" },
+    { source: "/menu/*", target: "/react-preview.html", status: "200" },
+    { source: "/app/*", target: "/react-preview.html", status: "200" },
+    { source: "/venue/*", target: "/react-preview.html", status: "200" },
+    { source: "/*", target: "/index.html", status: "200" },
   ];
 
-  for (const rule of requiredRules) {
-    if (!redirects.includes(rule)) {
-      throw new Error(`Missing Cloudflare Pages redirect: ${rule}`);
+  if (JSON.stringify(rules) !== JSON.stringify(expectedRules)) {
+    throw new Error("Cloudflare Pages redirects must keep React routes before the prototype catch-all.");
+  }
+
+  const expectedRouteTargets = {
+    "/tv/demo-venue": "/react-preview.html",
+    "/menu/demo-venue": "/react-preview.html",
+    "/app/demo-venue": "/react-preview.html",
+    "/venue/demo-venue": "/react-preview.html",
+    "/not-a-real-route": "/index.html",
+  };
+
+  for (const [route, target] of Object.entries(expectedRouteTargets)) {
+    const actualTarget = resolveRedirectTarget(route, rules);
+    if (actualTarget !== target) {
+      throw new Error(`Cloudflare route ${route} resolved to ${actualTarget}, expected ${target}.`);
     }
   }
+}
+
+function parseRedirectRules(source) {
+  return source
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith("#"))
+    .map(line => {
+      const [ruleSource, target, status] = line.split(/\s+/);
+      return { source: ruleSource, target, status };
+    });
+}
+
+function resolveRedirectTarget(route, rules) {
+  return rules.find(rule => matchesRedirectSource(route, rule.source))?.target;
+}
+
+function matchesRedirectSource(route, source) {
+  if (source.endsWith("/*")) {
+    return route === source.slice(0, -2) || route.startsWith(source.slice(0, -1));
+  }
+
+  return route === source;
 }
