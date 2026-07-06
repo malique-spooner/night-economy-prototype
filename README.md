@@ -76,6 +76,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 
 Local prototype builds can still use `npm run build`. Production deploys should use `npm run build:production` so missing Supabase config fails before Cloudflare publishes the site.
 
+`public/_redirects` keeps `/` on the current prototype while serving React routes for `/tv/*`, `/menu/*`, `/app/*`, and `/venue/*`.
+
 ## Pre-Deploy Check
 
 Run this before pushing a deploy branch:

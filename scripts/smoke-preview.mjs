@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
 
 const host = "127.0.0.1";
 const port = Number(process.env.SMOKE_PREVIEW_PORT ?? 4173);
@@ -12,6 +13,7 @@ const routes = [
 ];
 
 await run("npm", ["run", "build"]);
+await assertCloudflareRedirects();
 
 const server = spawn(
   "npm",
@@ -87,4 +89,21 @@ function waitForExit(child) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function assertCloudflareRedirects() {
+  const redirects = await readFile("dist/_redirects", "utf8");
+  const requiredRules = [
+    "/tv/* /react-preview.html 200",
+    "/menu/* /react-preview.html 200",
+    "/app/* /react-preview.html 200",
+    "/venue/* /react-preview.html 200",
+    "/* /index.html 200",
+  ];
+
+  for (const rule of requiredRules) {
+    if (!redirects.includes(rule)) {
+      throw new Error(`Missing Cloudflare Pages redirect: ${rule}`);
+    }
+  }
 }
