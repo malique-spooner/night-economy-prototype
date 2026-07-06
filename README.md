@@ -75,3 +75,13 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
 Local prototype builds can still use `npm run build`. Production deploys should use `npm run build:production` so missing Supabase config fails before Cloudflare publishes the site.
+
+## Pre-Deploy Check
+
+Run this before pushing a deploy branch:
+
+```bash
+npm run smoke:preview
+```
+
+It builds the app, starts Vite's production preview server, and checks the current prototype plus the four React migration views.

@@ -10,9 +10,10 @@
     "check:env": "node scripts/validate-env.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "preview": "vite preview",
+    "smoke:preview": "node scripts/smoke-preview.mjs",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run test && npm run smoke:preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
