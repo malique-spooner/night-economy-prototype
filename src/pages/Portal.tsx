@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PortalAuthPanel } from "../components/portal/PortalAuthPanel";
 import { PortalSidebar } from "../components/portal/PortalSidebar";
 import { PortalStartPage } from "../components/portal/PortalStartPage";
+import { normalizeMarketProductPatch } from "../components/portal/portalHelpers";
 import { useMarketState } from "../hooks/useMarketState";
 import { supabaseStatus } from "../supabase/client";
 import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../supabase/auth";
@@ -42,10 +43,13 @@ export function Portal({ venueSlug }: Props) {
     options: { persist?: boolean } = {},
   ) {
     if (!state) return;
+    const currentProduct = state.products.find(product => product.id === productId);
+    if (!currentProduct) return;
+    const normalizedPatch = normalizeMarketProductPatch(currentProduct, patch);
 
     setState({
       ...state,
-      products: state.products.map(product => (product.id === productId ? { ...product, ...patch } : product)),
+      products: state.products.map(product => (product.id === productId ? { ...product, ...normalizedPatch } : product)),
     });
 
     if (!canPersist) {
@@ -59,7 +63,7 @@ export function Portal({ venueSlug }: Props) {
     }
 
     try {
-      const result = await updateMarketProduct(productId, patch);
+      const result = await updateMarketProduct(productId, normalizedPatch);
       setLastSavedMessage(result.persisted ? "Saved to Supabase" : "Demo change only");
     } catch (error) {
       setLastSavedMessage(error instanceof Error ? `Not saved: ${error.message}` : "Not saved");
