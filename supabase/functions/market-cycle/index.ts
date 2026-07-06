@@ -3,9 +3,20 @@ type MarketProduct = {
   current_price_minor: number;
   floor_price_minor: number;
   ceiling_price_minor: number;
+  sales_velocity: number;
   is_live: boolean;
   is_sold_out: boolean;
 };
+
+type PriceDecision = {
+  productId: string;
+  oldPriceMinor: number;
+  newPriceMinor: number;
+  movement: "up" | "down" | "hold";
+  reason: string;
+};
+
+const STEP_MINOR = 50;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,18 +87,43 @@ Deno.serve(async request => {
   return json({ ok: true, engine: "night-economy-v1", snapshot });
 });
 
-function priceProduct(product: MarketProduct) {
-  const nextPrice = !product.is_live || product.is_sold_out
-    ? product.current_price_minor
-    : Math.max(product.floor_price_minor, Math.min(product.ceiling_price_minor, product.current_price_minor));
+function priceProduct(product: MarketProduct): PriceDecision {
+  if (!product.is_live || product.is_sold_out) {
+    return {
+      productId: product.id,
+      oldPriceMinor: product.current_price_minor,
+      newPriceMinor: product.current_price_minor,
+      movement: "hold",
+      reason: "Product is not currently tradable.",
+    };
+  }
+
+  const rawNext =
+    product.sales_velocity >= 7
+      ? product.current_price_minor + STEP_MINOR
+      : product.sales_velocity <= 2
+        ? product.current_price_minor - STEP_MINOR
+        : product.current_price_minor;
+
+  const nextPrice = Math.max(product.floor_price_minor, Math.min(product.ceiling_price_minor, rawNext));
+  const movement =
+    nextPrice > product.current_price_minor ? "up" : nextPrice < product.current_price_minor ? "down" : "hold";
 
   return {
     productId: product.id,
     oldPriceMinor: product.current_price_minor,
     newPriceMinor: nextPrice,
-    movement: "hold",
-    reason: "Initial function shell holds price until sales ingestion lands.",
+    movement,
+    reason: getReason(product, movement),
   };
+}
+
+function getReason(product: MarketProduct, movement: PriceDecision["movement"]) {
+  if (movement === "up") return "Strong recent sales velocity pushed the price up one step.";
+  if (movement === "down") return "Soft recent sales velocity pulled the price down one step.";
+  if (product.current_price_minor === product.floor_price_minor) return "Price held at the product floor.";
+  if (product.current_price_minor === product.ceiling_price_minor) return "Price held at the product ceiling.";
+  return "Sales velocity was steady, so the price held.";
 }
 
 function json(body: unknown, status = 200) {

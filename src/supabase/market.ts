@@ -52,7 +52,7 @@ export async function getMarketState(venueSlug: string): Promise<MarketState> {
       currentPriceMinor: row.current_price_minor,
       floorPriceMinor: row.floor_price_minor,
       ceilingPriceMinor: row.ceiling_price_minor,
-      salesVelocity: 0,
+      salesVelocity: row.sales_velocity ?? 4,
       isLive: row.is_live,
       isSoldOut: row.is_sold_out,
       priority: row.priority,
