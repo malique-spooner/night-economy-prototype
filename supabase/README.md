@@ -35,7 +35,10 @@ Apply migrations in order:
 001_initial.sql
 002_auth_rls.sql
 003_realtime_market.sql
+004_site_leads.sql
 ```
+
+`004_site_leads.sql` creates the public site lead capture table. It allows anonymous inserts only; public clients cannot read submitted leads.
 
 To print one reviewed SQL bundle for the Supabase SQL editor:
 

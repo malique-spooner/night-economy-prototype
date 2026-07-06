@@ -6,6 +6,7 @@ const expectedMigrations = [
   "001_initial.sql",
   "002_auth_rls.sql",
   "003_realtime_market.sql",
+  "004_site_leads.sql",
 ];
 
 const migrationFiles = readdirSync(migrationsDir)

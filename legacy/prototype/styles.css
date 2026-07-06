@@ -2683,6 +2683,9 @@ body[data-app-view='site'] .site-view{
 .site-signup-form label{display:grid;gap:8px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(16,24,20,0.52);font-family:'DM Mono',monospace}
 .site-signup-form input,.site-signup-form select{width:100%;padding:14px 16px;border-radius:16px;border:1px solid rgba(16,24,20,0.12);background:#fff;color:#101814;font:inherit}
 .site-signup-form button{width:100%;padding:16px 18px;border:none;border-radius:999px;background:#101814;color:#f5f0e6;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;font-size:11px;cursor:pointer;box-shadow:0 14px 34px rgba(16,24,20,0.16)}
+.site-signup-form button:disabled{cursor:not-allowed;opacity:0.62;box-shadow:none}
+.site-signup-message{margin:0;padding:12px 14px;border-radius:14px;background:rgba(79,143,104,0.1);color:#234732;font-size:13px;line-height:1.45;letter-spacing:0;text-transform:none;font-family:'Inter',sans-serif}
+.site-signup-message.error{background:rgba(173,54,54,0.1);color:#7b2828}
 .site-footer{padding:92px 24px 96px;border-top:1px solid rgba(16,24,20,0.08);display:grid;grid-template-columns:1.05fr 0.95fr;gap:36px;align-self:stretch}
 .site-footer-brand h2{max-width:10ch}
 .site-footer-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
