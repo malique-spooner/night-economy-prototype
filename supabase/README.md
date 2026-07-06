@@ -27,6 +27,14 @@ Use `owner` or `admin` for venue settings. Use `staff` for market product edits.
 
 `003_realtime_market.sql` adds `venues` and `market_products` to the `supabase_realtime` publication. This lets the TV board, mobile menu, and portal refresh from the same live market state after a product or venue row changes.
 
+## Edge Functions
+
+`functions/market-cycle` uses `SUPABASE_SERVICE_ROLE_KEY` server-side to run one pricing cycle and write a snapshot. Before deploying it, verify with the Supabase CLI in an environment that has Deno available:
+
+```bash
+supabase functions deploy market-cycle
+```
+
 ## Apply Order
 
 Apply migrations in order:

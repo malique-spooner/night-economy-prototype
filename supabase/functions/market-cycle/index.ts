@@ -8,6 +8,10 @@ type MarketProduct = {
   is_sold_out: boolean;
 };
 
+type Venue = {
+  id: string;
+};
+
 type PriceDecision = {
   productId: string;
   oldPriceMinor: number;
@@ -25,6 +29,14 @@ const corsHeaders = {
 };
 
 Deno.serve(async request => {
+  try {
+    return await handleRequest(request);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : "Market cycle failed" }, 500);
+  }
+});
+
+async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -43,25 +55,29 @@ Deno.serve(async request => {
     "content-type": "application/json",
   };
 
-  const venueResponse = await fetch(`${supabaseUrl}/rest/v1/venues?slug=eq.${venueSlug}&select=*`, { headers });
-  const venues = await venueResponse.json();
+  const venues = await restJson<Venue[]>(
+    `${supabaseUrl}/rest/v1/venues?slug=eq.${encodeURIComponent(venueSlug)}&select=id`,
+    { headers },
+    "load venue",
+  );
   const venue = venues?.[0];
   if (!venue) return json({ error: "Venue not found" }, 404);
 
-  const productsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/market_products?venue_id=eq.${venue.id}&select=*&order=display_name.asc`,
+  const products = await restJson<MarketProduct[]>(
+    `${supabaseUrl}/rest/v1/market_products?venue_id=eq.${encodeURIComponent(venue.id)}&select=*&order=display_name.asc`,
     { headers },
+    "load market products",
   );
-  const products: MarketProduct[] = await productsResponse.json();
   const decisions = products.map(priceProduct);
+  const updatedAt = new Date().toISOString();
 
   await Promise.all(
     decisions.map(decision =>
-      fetch(`${supabaseUrl}/rest/v1/market_products?id=eq.${decision.productId}`, {
+      restRequest(`${supabaseUrl}/rest/v1/market_products?id=eq.${encodeURIComponent(decision.productId)}`, {
         method: "PATCH",
         headers,
-        body: JSON.stringify({ current_price_minor: decision.newPriceMinor, updated_at: new Date().toISOString() }),
-      }),
+        body: JSON.stringify({ current_price_minor: decision.newPriceMinor, updated_at: updatedAt }),
+      }, `update product ${decision.productId}`),
     ),
   );
 
@@ -72,7 +88,7 @@ Deno.serve(async request => {
     decisions,
   };
 
-  await fetch(`${supabaseUrl}/rest/v1/market_price_snapshots`, {
+  await restRequest(`${supabaseUrl}/rest/v1/market_price_snapshots`, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -82,10 +98,25 @@ Deno.serve(async request => {
       status: "published",
       snapshot,
     }),
-  });
+  }, "write market snapshot");
 
   return json({ ok: true, engine: "night-economy-v1", snapshot });
-});
+}
+
+async function restJson<T>(url: string, init: RequestInit, action: string): Promise<T> {
+  const response = await restRequest(url, init, action);
+  return response.json() as Promise<T>;
+}
+
+async function restRequest(url: string, init: RequestInit, action: string) {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Supabase REST failed to ${action}: ${response.status} ${body}`);
+  }
+
+  return response;
+}
 
 function priceProduct(product: MarketProduct): PriceDecision {
   if (!product.is_live || product.is_sold_out) {
