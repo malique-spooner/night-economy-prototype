@@ -21,7 +21,11 @@ export function categoryLabel(category: string) {
 }
 
 export function categoryClass(category: string) {
-  return category.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+  return category
+    .trim()
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
 }
 
 export function movementLabel(product: MarketProduct) {
