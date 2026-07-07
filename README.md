@@ -23,6 +23,8 @@ npm install
 npm run dev
 ```
 
+Use Node.js 22 or newer. `.nvmrc` is set to `22` for local shells that use `nvm`.
+
 Open the current prototype:
 
 ```text

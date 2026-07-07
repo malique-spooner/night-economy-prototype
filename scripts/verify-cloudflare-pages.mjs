@@ -23,8 +23,12 @@ for (const key of Object.keys(config.vars ?? {})) {
 }
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-if (packageJson.scripts?.["build:production"] !== "npm run check:env && npm run build") {
-  errors.push("package.json: build:production must validate env before building.");
+if (packageJson.engines?.node !== ">=22") {
+  errors.push("package.json: engines.node must be >=22.");
+}
+
+if (packageJson.scripts?.["build:production"] !== "npm run runtime:verify && npm run check:env && npm run build") {
+  errors.push("package.json: build:production must validate runtime and env before building.");
 }
 
 if (errors.length) {
