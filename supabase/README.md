@@ -65,4 +65,10 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
+Check the local setup without printing secrets:
+
+```bash
+npm run supabase:status
+```
+
 Run `npm run check:env` before production deployment.

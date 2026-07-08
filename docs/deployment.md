@@ -12,6 +12,7 @@ npm run check
 For a production build, also verify the real public Supabase variables:
 
 ```bash
+npm run supabase:status
 npm run build:production
 ```
 
