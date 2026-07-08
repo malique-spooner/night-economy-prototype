@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MarketProduct } from "../../engine/types";
-import { normalizeMarketProductPatch } from "./portalHelpers";
+import { canEditMarketProducts, normalizeMarketProductPatch, portalAccessMessage } from "./portalHelpers";
 
 const product: MarketProduct = {
   id: "mp_test",
@@ -51,5 +51,36 @@ describe("normalizeMarketProductPatch", () => {
   it("trims names and keeps the old name when the edit is blank", () => {
     expect(normalizeMarketProductPatch(product, { name: "  Better Drink  " })).toEqual({ name: "Better Drink" });
     expect(normalizeMarketProductPatch(product, { name: "  " })).toEqual({ name: "Test Drink" });
+  });
+});
+
+describe("canEditMarketProducts", () => {
+  it("allows seed edits without auth", () => {
+    expect(canEditMarketProducts({ isSignedIn: false, role: null, source: "seed" })).toBe(true);
+  });
+
+  it("requires a venue membership role for Supabase edits", () => {
+    expect(canEditMarketProducts({ isSignedIn: true, role: null, source: "supabase" })).toBe(false);
+    expect(canEditMarketProducts({ isSignedIn: true, role: "staff", source: "supabase" })).toBe(true);
+  });
+});
+
+describe("portalAccessMessage", () => {
+  it("explains the current portal access state", () => {
+    expect(portalAccessMessage({ isSignedIn: false, isCheckingAccess: false, role: null, source: "seed" })).toBe(
+      "Demo changes stay local",
+    );
+    expect(portalAccessMessage({ isSignedIn: false, isCheckingAccess: false, role: null, source: "supabase" })).toBe(
+      "Sign in to save changes",
+    );
+    expect(portalAccessMessage({ isSignedIn: true, isCheckingAccess: true, role: null, source: "supabase" })).toBe(
+      "Checking venue access",
+    );
+    expect(portalAccessMessage({ isSignedIn: true, isCheckingAccess: false, role: null, source: "supabase" })).toBe(
+      "No access to this venue",
+    );
+    expect(portalAccessMessage({ isSignedIn: true, isCheckingAccess: false, role: "owner", source: "supabase" })).toBe(
+      "Can edit as owner",
+    );
   });
 });

@@ -1,5 +1,6 @@
 import type { MarketProduct } from "../../engine/types";
 import type { MarketProductPatch } from "../../supabase/market";
+import type { VenueMemberRole } from "../../supabase/memberships";
 import { categoryLabel, groupProductsByCategory } from "../tv/tvHelpers";
 
 export function portalCategories(products: MarketProduct[]) {
@@ -36,6 +37,37 @@ export function normalizeMarketProductPatch(product: MarketProduct, patch: Marke
       : {}),
     ...(patch.name !== undefined ? { name: patch.name.trim() || product.name } : {}),
   };
+}
+
+export function canEditMarketProducts({
+  isSignedIn,
+  role,
+  source,
+}: {
+  isSignedIn: boolean;
+  role: VenueMemberRole | null;
+  source: "seed" | "supabase";
+}) {
+  return source === "seed" || (isSignedIn && role !== null);
+}
+
+export function portalAccessMessage({
+  isSignedIn,
+  isCheckingAccess,
+  role,
+  source,
+}: {
+  isSignedIn: boolean;
+  isCheckingAccess: boolean;
+  role: VenueMemberRole | null;
+  source: "seed" | "supabase";
+}) {
+  if (source === "seed") return "Demo changes stay local";
+  if (!isSignedIn) return "Sign in to save changes";
+  if (isCheckingAccess) return "Checking venue access";
+  if (!role) return "No access to this venue";
+
+  return `Can edit as ${role}`;
 }
 
 function hasPricePatch(patch: MarketProductPatch) {

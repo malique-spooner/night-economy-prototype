@@ -10,6 +10,7 @@ type Props = {
   onSignIn: () => void;
   onSignOut: () => void;
   password: string;
+  statusMessage: string;
 };
 
 export function PortalAuthPanel({
@@ -22,6 +23,7 @@ export function PortalAuthPanel({
   onSignIn,
   onSignOut,
   password,
+  statusMessage,
 }: Props) {
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -55,7 +57,7 @@ export function PortalAuthPanel({
           <button disabled={!isConfigured} type="submit">Sign in</button>
         </form>
       )}
-      {error ? <small>{error}</small> : null}
+      <small>{error || statusMessage}</small>
     </div>
   );
 }

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { PortalAuthPanel } from "../components/portal/PortalAuthPanel";
 import { PortalSidebar } from "../components/portal/PortalSidebar";
 import { PortalStartPage } from "../components/portal/PortalStartPage";
-import { normalizeMarketProductPatch } from "../components/portal/portalHelpers";
+import { canEditMarketProducts, normalizeMarketProductPatch, portalAccessMessage } from "../components/portal/portalHelpers";
 import { useMarketState } from "../hooks/useMarketState";
 import { supabaseStatus } from "../supabase/client";
 import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../supabase/auth";
+import { getVenueMemberRole, type VenueMemberRole } from "../supabase/memberships";
 import {
   updateMarketProduct,
   type MarketProductPatch,
@@ -23,6 +24,8 @@ export function Portal({ venueSlug }: Props) {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [lastSavedMessage, setLastSavedMessage] = useState("");
+  const [memberRole, setMemberRole] = useState<VenueMemberRole | null>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
   useEffect(() => {
     void refreshSession();
@@ -31,11 +34,57 @@ export function Portal({ venueSlug }: Props) {
     });
   }, []);
 
+  useEffect(() => {
+    if (!state) return;
+    const { source, venue } = state;
+
+    let cancelled = false;
+
+    async function refreshVenueAccess() {
+      if (source === "seed") {
+        setMemberRole(null);
+        setIsCheckingAccess(false);
+        return;
+      }
+
+      if (!isSignedIn) {
+        setMemberRole(null);
+        setIsCheckingAccess(false);
+        return;
+      }
+
+      try {
+        setIsCheckingAccess(true);
+        const role = await getVenueMemberRole(venue.id);
+        if (!cancelled) setMemberRole(role);
+      } catch (error) {
+        if (!cancelled) {
+          setMemberRole(null);
+          setAuthError(error instanceof Error ? error.message : "Could not check venue access");
+        }
+      } finally {
+        if (!cancelled) setIsCheckingAccess(false);
+      }
+    }
+
+    void refreshVenueAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, state?.source, state?.venue.id]);
+
   if (error) return <main className="page">Could not load portal: {error}</main>;
   if (!state) return <main className="page">Loading portal...</main>;
 
   const liveCount = state.products.filter(product => !product.isSoldOut && product.isLive).length;
-  const canPersist = state.source === "seed" || isSignedIn;
+  const canPersist = canEditMarketProducts({ isSignedIn, role: memberRole, source: state.source });
+  const accessMessage = portalAccessMessage({
+    isCheckingAccess,
+    isSignedIn,
+    role: memberRole,
+    source: state.source,
+  });
 
   async function handleProductChange(
     productId: string,
@@ -47,15 +96,15 @@ export function Portal({ venueSlug }: Props) {
     if (!currentProduct) return;
     const normalizedPatch = normalizeMarketProductPatch(currentProduct, patch);
 
+    if (!canPersist) {
+      setLastSavedMessage(accessMessage);
+      return;
+    }
+
     setState({
       ...state,
       products: state.products.map(product => (product.id === productId ? { ...product, ...normalizedPatch } : product)),
     });
-
-    if (!canPersist) {
-      setLastSavedMessage("Sign in to save");
-      return;
-    }
 
     if (options.persist === false) {
       setLastSavedMessage("Unsaved edit");
@@ -81,7 +130,7 @@ export function Portal({ venueSlug }: Props) {
       await signInWithEmail(email, password);
       setPassword("");
       await refreshSession();
-      setLastSavedMessage("Signed in");
+      setLastSavedMessage("Checking venue access");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Could not sign in");
     }
@@ -92,6 +141,7 @@ export function Portal({ venueSlug }: Props) {
       setAuthError("");
       await signOut();
       await refreshSession();
+      setMemberRole(null);
       setLastSavedMessage("Signed out");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Could not sign out");
@@ -116,6 +166,7 @@ export function Portal({ venueSlug }: Props) {
                   onSignIn={handleSignIn}
                   onSignOut={handleSignOut}
                   password={password}
+                  statusMessage={accessMessage}
                 />
               }
               liveCount={liveCount}
