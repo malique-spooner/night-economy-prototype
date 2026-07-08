@@ -9,6 +9,8 @@ npm install
 npm run check
 ```
 
+`npm run check` includes a Supabase SQL/RLS verifier so migration guardrails are checked before deployment.
+
 For a production build, also verify the real public Supabase variables:
 
 ```bash

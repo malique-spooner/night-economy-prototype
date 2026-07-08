@@ -75,4 +75,10 @@ Check the local setup without printing secrets:
 npm run supabase:status
 ```
 
+Verify the migration security guardrails:
+
+```bash
+npm run supabase:verify-sql
+```
+
 Run `npm run check:env` before production deployment.
