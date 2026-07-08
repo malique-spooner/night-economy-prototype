@@ -23,6 +23,56 @@ export type MarketProductPatch = Partial<
   >
 >;
 
+export type VenueRow = {
+  id: string;
+  slug: string;
+  name: string;
+  currency: string;
+  timezone: string;
+};
+
+export type MarketProductRow = {
+  id: string;
+  market_symbol: string;
+  display_name: string;
+  category: string;
+  base_price_minor: number;
+  current_price_minor: number;
+  floor_price_minor: number;
+  ceiling_price_minor: number;
+  sales_velocity?: number | null;
+  is_live: boolean;
+  is_sold_out: boolean;
+  priority: boolean;
+};
+
+export function mapVenueRow(row: VenueRow): Venue {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    currency: row.currency,
+    timezone: row.timezone,
+  };
+}
+
+export function mapMarketProductRow(row: MarketProductRow): MarketProduct {
+  return {
+    id: row.id,
+    symbol: row.market_symbol,
+    name: row.display_name,
+    category: row.category,
+    basePriceMinor: row.base_price_minor,
+    currentPriceMinor: row.current_price_minor,
+    floorPriceMinor: row.floor_price_minor,
+    ceilingPriceMinor: row.ceiling_price_minor,
+    salesVelocity: row.sales_velocity ?? 4,
+    isLive: row.is_live,
+    isSoldOut: row.is_sold_out,
+    priority: row.priority,
+  };
+}
+
 export async function getMarketState(venueSlug: string): Promise<MarketState> {
   if (!supabase) return { venue: seedVenue, products: seedProducts, source: "seed" };
 
@@ -36,27 +86,8 @@ export async function getMarketState(venueSlug: string): Promise<MarketState> {
     .order("display_name");
 
   return {
-    venue: {
-      id: venue.id,
-      slug: venue.slug,
-      name: venue.name,
-      currency: venue.currency,
-      timezone: venue.timezone,
-    },
-    products: (products ?? []).map(row => ({
-      id: row.id,
-      symbol: row.market_symbol,
-      name: row.display_name,
-      category: row.category,
-      basePriceMinor: row.base_price_minor,
-      currentPriceMinor: row.current_price_minor,
-      floorPriceMinor: row.floor_price_minor,
-      ceilingPriceMinor: row.ceiling_price_minor,
-      salesVelocity: row.sales_velocity ?? 4,
-      isLive: row.is_live,
-      isSoldOut: row.is_sold_out,
-      priority: row.priority,
-    })),
+    venue: mapVenueRow(venue),
+    products: (products ?? []).map(mapMarketProductRow),
     source: "supabase",
   };
 }
