@@ -10,6 +10,7 @@ import { portalCategories } from "./portalHelpers";
 type Props = {
   lastSavedMessage: string;
   onProductChange: (productId: string, patch: MarketProductPatch, options?: { persist?: boolean }) => void;
+  onProductAdd: (product: MarketProduct) => boolean | Promise<boolean>;
   onVenueSettingsChange: (patch: VenueMarketSettingsPatch) => void;
   products: MarketProduct[];
   source: "seed" | "supabase";
@@ -18,6 +19,7 @@ type Props = {
 
 export function PortalStartPage({
   lastSavedMessage,
+  onProductAdd,
   onProductChange,
   onVenueSettingsChange,
   products,
@@ -56,7 +58,7 @@ export function PortalStartPage({
           />
         ))}
       </div>
-      <PortalQuickAdd categories={categories} />
+      <PortalQuickAdd categories={categories} onProductAdd={onProductAdd} products={products} />
     </section>
   );
 }

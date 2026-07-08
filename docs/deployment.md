@@ -42,6 +42,7 @@ Apply the output in the Supabase SQL editor for the target project. The bundle i
 004_site_leads.sql
 005_market_sales_velocity.sql
 006_venue_market_settings.sql
+007_market_product_inserts.sql
 ```
 
 After applying SQL, create a Supabase Auth operator user and grant access with the `venue_members` insert shown in `supabase/README.md`.

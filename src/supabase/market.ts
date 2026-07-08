@@ -26,6 +26,8 @@ export type MarketProductPatch = Partial<
 
 export type VenueMarketSettingsPatch = Partial<VenueMarketSettings>;
 
+export type MarketProductCreate = MarketProduct;
+
 export type VenueRow = {
   id: string;
   slug: string;
@@ -122,6 +124,19 @@ export async function updateMarketProduct(productId: string, patch: MarketProduc
   return { persisted: true as const };
 }
 
+export async function createMarketProduct(venueId: string, product: MarketProductCreate) {
+  if (!supabase) return { persisted: false as const, product };
+
+  const { data, error } = await supabase
+    .from("market_products")
+    .insert(toMarketProductInsertRow(venueId, product))
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  return { persisted: true as const, product: mapMarketProductRow(data) };
+}
+
 export async function updateVenueMarketSettings(venueId: string, patch: VenueMarketSettingsPatch) {
   if (!supabase) return { persisted: false as const };
 
@@ -146,6 +161,24 @@ function toMarketProductRowPatch(patch: MarketProductPatch) {
     ...(patch.isSoldOut !== undefined ? { is_sold_out: patch.isSoldOut } : {}),
     ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
     updated_at: new Date().toISOString(),
+  };
+}
+
+function toMarketProductInsertRow(venueId: string, product: MarketProductCreate) {
+  return {
+    id: product.id,
+    venue_id: venueId,
+    market_symbol: product.symbol,
+    display_name: product.name,
+    category: product.category,
+    base_price_minor: product.basePriceMinor,
+    current_price_minor: product.currentPriceMinor,
+    floor_price_minor: product.floorPriceMinor,
+    ceiling_price_minor: product.ceilingPriceMinor,
+    sales_velocity: product.salesVelocity,
+    is_live: product.isLive,
+    is_sold_out: product.isSoldOut,
+    priority: product.priority,
   };
 }
 

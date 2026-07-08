@@ -5,6 +5,7 @@ import {
   canManageVenueSettings,
   normalizeMarketProductPatch,
   portalAccessMessage,
+  prepareQuickAddProduct,
   venueSettingsAccessMessage,
 } from "./portalHelpers";
 
@@ -57,6 +58,69 @@ describe("normalizeMarketProductPatch", () => {
   it("trims names and keeps the old name when the edit is blank", () => {
     expect(normalizeMarketProductPatch(product, { name: "  Better Drink  " })).toEqual({ name: "Better Drink" });
     expect(normalizeMarketProductPatch(product, { name: "  " })).toEqual({ name: "Test Drink" });
+  });
+});
+
+describe("prepareQuickAddProduct", () => {
+  it("creates a normalized product from quick-add input", () => {
+    expect(
+      prepareQuickAddProduct({
+        id: "mp_new",
+        name: "  Peach Highball ",
+        category: "signature-cocktails",
+        price: "12.50",
+        floorPrice: "",
+        ceilingPrice: "",
+        isSoldOut: false,
+        products: [product],
+      }),
+    ).toEqual({
+      ok: true,
+      product: {
+        id: "mp_new",
+        symbol: "PH",
+        name: "Peach Highball",
+        category: "signature-cocktails",
+        basePriceMinor: 1250,
+        currentPriceMinor: 1250,
+        floorPriceMinor: 813,
+        ceilingPriceMinor: 2063,
+        salesVelocity: 4,
+        isLive: true,
+        isSoldOut: false,
+        priority: false,
+      },
+    });
+  });
+
+  it("rejects missing names", () => {
+    expect(
+      prepareQuickAddProduct({
+        id: "mp_new",
+        name: " ",
+        category: "signature-cocktails",
+        price: "12",
+        floorPrice: "",
+        ceilingPrice: "",
+        isSoldOut: false,
+        products: [],
+      }),
+    ).toEqual({ ok: false, message: "Enter a drink name" });
+  });
+
+  it("keeps generated symbols unique", () => {
+    const result = prepareQuickAddProduct({
+      id: "mp_new",
+      name: "Test Drink",
+      category: "classic-cocktails",
+      price: "10",
+      floorPrice: "8",
+      ceilingPrice: "12",
+      isSoldOut: true,
+      products: [{ ...product, symbol: "TD" }],
+    });
+
+    expect(result.ok ? result.product.symbol : "").toBe("TD2");
   });
 });
 

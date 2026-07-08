@@ -8,6 +8,7 @@ const expectedMigrations = [
   "004_site_leads.sql",
   "005_market_sales_velocity.sql",
   "006_venue_market_settings.sql",
+  "007_market_product_inserts.sql",
 ];
 
 const env = {

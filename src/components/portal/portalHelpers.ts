@@ -3,6 +3,9 @@ import type { MarketProductPatch } from "../../supabase/market";
 import type { VenueMemberRole } from "../../supabase/memberships";
 import { categoryLabel, groupProductsByCategory } from "../tv/tvHelpers";
 
+const quickAddDefaultPriceMinor = 1200;
+const quickAddSafeMinMinor = 25;
+
 export function portalCategories(products: MarketProduct[]) {
   return groupProductsByCategory(products).map(([category]) => category);
 }
@@ -17,6 +20,53 @@ export function portalCategoryLabel(category: string) {
 
 export function formatInputMoney(valueMinor: number) {
   return (valueMinor / 100).toFixed(2);
+}
+
+export type QuickAddProductInput = {
+  category: string;
+  ceilingPrice: string;
+  floorPrice: string;
+  id: string;
+  isSoldOut: boolean;
+  name: string;
+  price: string;
+  products: MarketProduct[];
+};
+
+export type QuickAddProductResult =
+  | { ok: true; product: MarketProduct }
+  | { ok: false; message: string };
+
+export function prepareQuickAddProduct(input: QuickAddProductInput): QuickAddProductResult {
+  const name = input.name.trim();
+  if (!name) return { ok: false, message: "Enter a drink name" };
+
+  const currentPriceMinor = parseMoneyMinor(input.price, quickAddDefaultPriceMinor);
+  const floorPriceMinor = parseMoneyMinor(input.floorPrice, Math.round(currentPriceMinor * 0.65));
+  const ceilingPriceMinor = Math.max(
+    floorPriceMinor,
+    parseMoneyMinor(input.ceilingPrice, Math.round(currentPriceMinor * 1.65)),
+  );
+  const clampedCurrentPriceMinor = Math.min(Math.max(currentPriceMinor, floorPriceMinor), ceilingPriceMinor);
+  const category = input.category || input.products[0]?.category || "signature-cocktails";
+
+  return {
+    ok: true,
+    product: {
+      id: input.id,
+      symbol: nextMarketSymbol(name, input.products),
+      name,
+      category,
+      basePriceMinor: clampedCurrentPriceMinor,
+      currentPriceMinor: clampedCurrentPriceMinor,
+      floorPriceMinor,
+      ceilingPriceMinor,
+      salesVelocity: 4,
+      isLive: true,
+      isSoldOut: input.isSoldOut,
+      priority: false,
+    },
+  };
 }
 
 export function normalizeMarketProductPatch(product: MarketProduct, patch: MarketProductPatch): MarketProductPatch {
@@ -92,6 +142,36 @@ export function portalAccessMessage({
   if (!role) return "No access to this venue";
 
   return `Can edit as ${role}`;
+}
+
+function parseMoneyMinor(value: string, fallbackMinor: number) {
+  if (!value.trim()) return Math.max(quickAddSafeMinMinor, fallbackMinor);
+  const parsed = Number(value);
+  const minor = Number.isFinite(parsed) ? Math.round(parsed * 100) : fallbackMinor;
+  return Math.max(quickAddSafeMinMinor, minor);
+}
+
+function nextMarketSymbol(name: string, products: MarketProduct[]) {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .map(word => word[0])
+    .join("")
+    .replace(/[^a-z0-9]/gi, "")
+    .toUpperCase();
+  const compact = name.replace(/[^a-z0-9]/gi, "").slice(0, 4).toUpperCase();
+  const base = (initials || compact || "NE").slice(0, 4);
+  const used = new Set(products.map(product => product.symbol.toUpperCase()));
+
+  if (!used.has(base)) return base;
+
+  for (let index = 2; index < 100; index += 1) {
+    const suffix = String(index);
+    const candidate = `${base.slice(0, Math.max(1, 4 - suffix.length))}${suffix}`;
+    if (!used.has(candidate)) return candidate;
+  }
+
+  return `${base.slice(0, 2)}${products.length + 1}`;
 }
 
 function hasPricePatch(patch: MarketProductPatch) {

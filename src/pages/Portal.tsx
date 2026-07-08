@@ -14,8 +14,10 @@ import { supabaseStatus } from "../supabase/client";
 import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../supabase/auth";
 import { getVenueMemberRole, type VenueMemberRole } from "../supabase/memberships";
 import {
+  createMarketProduct,
   updateMarketProduct,
   updateVenueMarketSettings,
+  type MarketProductCreate,
   type MarketProductPatch,
   type VenueMarketSettingsPatch,
 } from "../supabase/market";
@@ -129,6 +131,25 @@ export function Portal({ venueSlug }: Props) {
     }
   }
 
+  async function handleProductAdd(product: MarketProductCreate) {
+    if (!state) return false;
+
+    if (!canPersist) {
+      setLastSavedMessage(accessMessage);
+      return false;
+    }
+
+    try {
+      const result = await createMarketProduct(state.venue.id, product);
+      setState({ ...state, products: [...state.products, result.product] });
+      setLastSavedMessage(result.persisted ? "Product added to Supabase" : "Demo product added");
+      return true;
+    } catch (error) {
+      setLastSavedMessage(error instanceof Error ? `Not added: ${error.message}` : "Not added");
+      return false;
+    }
+  }
+
   async function handleVenueSettingsChange(patch: VenueMarketSettingsPatch) {
     if (!state) return;
 
@@ -206,6 +227,7 @@ export function Portal({ venueSlug }: Props) {
               <div className="portal-workspace">
                 <PortalStartPage
                   lastSavedMessage={lastSavedMessage}
+                  onProductAdd={handleProductAdd}
                   onProductChange={handleProductChange}
                   onVenueSettingsChange={handleVenueSettingsChange}
                   products={state.products}
