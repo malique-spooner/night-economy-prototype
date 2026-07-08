@@ -37,6 +37,11 @@ export type QuickAddProductResult =
   | { ok: true; product: MarketProduct }
   | { ok: false; message: string };
 
+export type PortalCsvImportResult = {
+  errors: string[];
+  products: MarketProduct[];
+};
+
 export function prepareQuickAddProduct(input: QuickAddProductInput): QuickAddProductResult {
   const name = input.name.trim();
   if (!name) return { ok: false, message: "Enter a drink name" };
@@ -67,6 +72,47 @@ export function prepareQuickAddProduct(input: QuickAddProductInput): QuickAddPro
       priority: false,
     },
   };
+}
+
+export function preparePortalCsvProducts({
+  csv,
+  idFactory,
+  products,
+}: {
+  csv: string;
+  idFactory: () => string;
+  products: MarketProduct[];
+}): PortalCsvImportResult {
+  const [headerLine, ...lines] = csv.split(/\r?\n/).filter(line => line.trim());
+  if (!headerLine) return { errors: ["CSV is empty"], products: [] };
+
+  const headers = parseCsvLine(headerLine).map(header => normalizeCsvHeader(header));
+  const importedProducts: MarketProduct[] = [];
+  const errors: string[] = [];
+
+  lines.forEach((line, index) => {
+    const cells = parseCsvLine(line);
+    const row = Object.fromEntries(headers.map((header, cellIndex) => [header, cells[cellIndex] ?? ""]));
+    const result = prepareQuickAddProduct({
+      id: idFactory(),
+      name: row.name ?? row.drink ?? row.product ?? "",
+      category: row.category ?? row.cat ?? products[0]?.category ?? "signature-cocktails",
+      price: row.price ?? row.saleprice ?? row.currentprice ?? "",
+      floorPrice: row.floor ?? row.floorprice ?? "",
+      ceilingPrice: row.ceiling ?? row.ceilingprice ?? "",
+      isSoldOut: parseCsvBoolean(row.soldout ?? row.sold_out ?? row.paused),
+      products: [...products, ...importedProducts],
+    });
+
+    if (result.ok) {
+      importedProducts.push(result.product);
+      return;
+    }
+
+    errors.push(`Row ${index + 2}: ${result.message}`);
+  });
+
+  return { errors, products: importedProducts };
 }
 
 export function normalizeMarketProductPatch(product: MarketProduct, patch: MarketProductPatch): MarketProductPatch {
@@ -142,6 +188,47 @@ export function portalAccessMessage({
   if (!role) return "No access to this venue";
 
   return `Can edit as ${role}`;
+}
+
+function parseCsvLine(line: string) {
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    const nextCharacter = line[index + 1];
+
+    if (character === '"' && nextCharacter === '"') {
+      current += '"';
+      index += 1;
+      continue;
+    }
+
+    if (character === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (character === "," && !inQuotes) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += character;
+  }
+
+  cells.push(current.trim());
+  return cells;
+}
+
+function normalizeCsvHeader(header: string) {
+  return header.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function parseCsvBoolean(value = "") {
+  return ["1", "true", "yes", "y", "soldout", "sold out", "paused"].includes(value.trim().toLowerCase());
 }
 
 function parseMoneyMinor(value: string, fallbackMinor: number) {

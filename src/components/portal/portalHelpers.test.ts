@@ -5,6 +5,7 @@ import {
   canManageVenueSettings,
   normalizeMarketProductPatch,
   portalAccessMessage,
+  preparePortalCsvProducts,
   prepareQuickAddProduct,
   venueSettingsAccessMessage,
 } from "./portalHelpers";
@@ -121,6 +122,53 @@ describe("prepareQuickAddProduct", () => {
     });
 
     expect(result.ok ? result.product.symbol : "").toBe("TD2");
+  });
+});
+
+describe("preparePortalCsvProducts", () => {
+  it("imports products from CSV rows", () => {
+    const result = preparePortalCsvProducts({
+      csv: [
+        "name,category,price,floor,ceiling,soldOut",
+        "Peach Highball,signature-cocktails,12.5,8,18,false",
+        "\"Spicy, Margarita\",classic-cocktails,11,,,yes",
+      ].join("\n"),
+      idFactory: (() => {
+        let index = 0;
+        return () => `mp_csv_${index += 1}`;
+      })(),
+      products: [product],
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.products).toMatchObject([
+      {
+        id: "mp_csv_1",
+        name: "Peach Highball",
+        category: "signature-cocktails",
+        currentPriceMinor: 1250,
+        floorPriceMinor: 800,
+        ceilingPriceMinor: 1800,
+        isSoldOut: false,
+      },
+      {
+        id: "mp_csv_2",
+        name: "Spicy, Margarita",
+        category: "classic-cocktails",
+        currentPriceMinor: 1100,
+        isSoldOut: true,
+      },
+    ]);
+  });
+
+  it("reports invalid CSV rows", () => {
+    expect(
+      preparePortalCsvProducts({
+        csv: "name,price\n,12",
+        idFactory: () => "mp_csv_1",
+        products: [],
+      }),
+    ).toEqual({ errors: ["Row 2: Enter a drink name"], products: [] });
   });
 });
 
