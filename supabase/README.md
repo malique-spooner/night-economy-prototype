@@ -73,6 +73,12 @@ Check the local setup without printing secrets:
 npm run supabase:status
 ```
 
+After applying migrations and setting `.env.local`, verify public read access:
+
+```bash
+npm run supabase:smoke-live
+```
+
 Verify the migration security guardrails:
 
 ```bash

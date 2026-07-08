@@ -55,6 +55,12 @@ npm run supabase:grant-operator -- --email=operator@example.com --role=owner --v
 
 Copy the printed SQL into the Supabase SQL editor.
 
+Then verify the public app can read venue data:
+
+```bash
+npm run supabase:smoke-live
+```
+
 ## 3. Supabase Edge Function
 
 Set Supabase function secrets:
