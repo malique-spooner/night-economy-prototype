@@ -7,6 +7,11 @@ const venueRow: VenueRow = {
   name: "The Pickled Pub",
   currency: "GBP",
   timezone: "Europe/London",
+  market_live: true,
+  crash_interval_minutes: 60,
+  launch_date: "2026-07-08",
+  launch_start_time: "20:00:00",
+  launch_end_time: "01:00:00",
 };
 
 const productRow: MarketProductRow = {
@@ -32,7 +37,28 @@ describe("mapVenueRow", () => {
       name: "The Pickled Pub",
       currency: "GBP",
       timezone: "Europe/London",
+      marketLive: true,
+      crashIntervalMinutes: 60,
+      launchDate: "2026-07-08",
+      launchStartTime: "20:00",
+      launchEndTime: "01:00",
     });
+  });
+
+  it("defaults missing market settings for older venue rows", () => {
+    const mapped = mapVenueRow({
+      id: "venue_123",
+      slug: "pickled-pub",
+      name: "The Pickled Pub",
+      currency: "GBP",
+      timezone: "Europe/London",
+    });
+
+    expect(mapped.marketLive).toBe(false);
+    expect(mapped.crashIntervalMinutes).toBe(30);
+    expect(mapped.launchDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(mapped.launchStartTime).toMatch(/^\d{2}:\d{2}$/);
+    expect(mapped.launchEndTime).toMatch(/^\d{2}:\d{2}$/);
   });
 });
 

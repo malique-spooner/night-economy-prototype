@@ -1,4 +1,5 @@
 import type { MarketProduct, Venue } from "../engine/types";
+import { defaultVenueMarketSettings } from "../engine/venueSettings";
 
 export const seedVenue: Venue = {
   id: "ven_demo",
@@ -6,6 +7,7 @@ export const seedVenue: Venue = {
   name: "Demo Venue",
   currency: "GBP",
   timezone: "Europe/London",
+  ...defaultVenueMarketSettings(),
 };
 
 export const seedProducts: MarketProduct[] = [

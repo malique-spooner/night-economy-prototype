@@ -51,6 +51,30 @@ export function canEditMarketProducts({
   return source === "seed" || (isSignedIn && role !== null);
 }
 
+export function canManageVenueSettings({
+  role,
+  source,
+}: {
+  role: VenueMemberRole | null;
+  source: "seed" | "supabase";
+}) {
+  return source === "seed" || role === "owner" || role === "admin";
+}
+
+export function venueSettingsAccessMessage({
+  role,
+  source,
+}: {
+  role: VenueMemberRole | null;
+  source: "seed" | "supabase";
+}) {
+  if (source === "seed") return "Demo launch settings";
+  if (role === "owner" || role === "admin") return "Launch settings can be saved";
+  if (role === "staff") return "Owner or admin access required";
+
+  return "Sign in as an owner or admin";
+}
+
 export function portalAccessMessage({
   isSignedIn,
   isCheckingAccess,

@@ -4,7 +4,19 @@ export type Venue = {
   name: string;
   currency: string;
   timezone: string;
+  marketLive: boolean;
+  crashIntervalMinutes: CrashIntervalMinutes;
+  launchDate: string;
+  launchStartTime: string;
+  launchEndTime: string;
 };
+
+export type CrashIntervalMinutes = 15 | 30 | 60 | 120;
+
+export type VenueMarketSettings = Pick<
+  Venue,
+  "marketLive" | "crashIntervalMinutes" | "launchDate" | "launchStartTime" | "launchEndTime"
+>;
 
 export type MarketProduct = {
   id: string;

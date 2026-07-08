@@ -2,14 +2,22 @@ import { useEffect, useState } from "react";
 import { PortalAuthPanel } from "../components/portal/PortalAuthPanel";
 import { PortalSidebar } from "../components/portal/PortalSidebar";
 import { PortalStartPage } from "../components/portal/PortalStartPage";
-import { canEditMarketProducts, normalizeMarketProductPatch, portalAccessMessage } from "../components/portal/portalHelpers";
+import {
+  canEditMarketProducts,
+  canManageVenueSettings,
+  normalizeMarketProductPatch,
+  portalAccessMessage,
+  venueSettingsAccessMessage,
+} from "../components/portal/portalHelpers";
 import { useMarketState } from "../hooks/useMarketState";
 import { supabaseStatus } from "../supabase/client";
 import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../supabase/auth";
 import { getVenueMemberRole, type VenueMemberRole } from "../supabase/memberships";
 import {
   updateMarketProduct,
+  updateVenueMarketSettings,
   type MarketProductPatch,
+  type VenueMarketSettingsPatch,
 } from "../supabase/market";
 import { PageSwitcher } from "./PageSwitcher";
 
@@ -79,12 +87,14 @@ export function Portal({ venueSlug }: Props) {
 
   const liveCount = state.products.filter(product => !product.isSoldOut && product.isLive).length;
   const canPersist = canEditMarketProducts({ isSignedIn, role: memberRole, source: state.source });
+  const canManageSettings = canManageVenueSettings({ role: memberRole, source: state.source });
   const accessMessage = portalAccessMessage({
     isCheckingAccess,
     isSignedIn,
     role: memberRole,
     source: state.source,
   });
+  const settingsAccessMessage = venueSettingsAccessMessage({ role: memberRole, source: state.source });
 
   async function handleProductChange(
     productId: string,
@@ -114,6 +124,25 @@ export function Portal({ venueSlug }: Props) {
     try {
       const result = await updateMarketProduct(productId, normalizedPatch);
       setLastSavedMessage(result.persisted ? "Saved to Supabase" : "Demo change only");
+    } catch (error) {
+      setLastSavedMessage(error instanceof Error ? `Not saved: ${error.message}` : "Not saved");
+    }
+  }
+
+  async function handleVenueSettingsChange(patch: VenueMarketSettingsPatch) {
+    if (!state) return;
+
+    if (!canManageSettings) {
+      setLastSavedMessage(settingsAccessMessage);
+      return;
+    }
+
+    const nextVenue = { ...state.venue, ...patch };
+    setState({ ...state, venue: nextVenue });
+
+    try {
+      const result = await updateVenueMarketSettings(state.venue.id, patch);
+      setLastSavedMessage(result.persisted ? "Launch settings saved" : "Demo launch settings");
     } catch (error) {
       setLastSavedMessage(error instanceof Error ? `Not saved: ${error.message}` : "Not saved");
     }
@@ -178,6 +207,7 @@ export function Portal({ venueSlug }: Props) {
                 <PortalStartPage
                   lastSavedMessage={lastSavedMessage}
                   onProductChange={handleProductChange}
+                  onVenueSettingsChange={handleVenueSettingsChange}
                   products={state.products}
                   source={state.source}
                   venue={state.venue}

@@ -47,10 +47,12 @@ Apply migrations in order:
 003_realtime_market.sql
 004_site_leads.sql
 005_market_sales_velocity.sql
+006_venue_market_settings.sql
 ```
 
 `004_site_leads.sql` creates the public site lead capture table. It allows anonymous inserts only; public clients cannot read submitted leads.
 `005_market_sales_velocity.sql` adds the velocity input used by the market-cycle job.
+`006_venue_market_settings.sql` adds the portal launch window settings to venues.
 
 To print one reviewed SQL bundle for the Supabase SQL editor:
 

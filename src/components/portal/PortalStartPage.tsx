@@ -1,5 +1,5 @@
-import type { MarketProduct, Venue } from "../../engine/types";
-import type { MarketProductPatch } from "../../supabase/market";
+import type { MarketProduct, Venue, VenueMarketSettings } from "../../engine/types";
+import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../supabase/market";
 import { groupProductsByCategory } from "../tv/tvHelpers";
 import { PortalCategoryFilters } from "./PortalCategoryFilters";
 import { PortalDrinkGroup } from "./PortalDrinkGroup";
@@ -10,19 +10,34 @@ import { portalCategories } from "./portalHelpers";
 type Props = {
   lastSavedMessage: string;
   onProductChange: (productId: string, patch: MarketProductPatch, options?: { persist?: boolean }) => void;
+  onVenueSettingsChange: (patch: VenueMarketSettingsPatch) => void;
   products: MarketProduct[];
   source: "seed" | "supabase";
   venue: Venue;
 };
 
-export function PortalStartPage({ lastSavedMessage, onProductChange, products, source, venue }: Props) {
+export function PortalStartPage({
+  lastSavedMessage,
+  onProductChange,
+  onVenueSettingsChange,
+  products,
+  source,
+  venue,
+}: Props) {
   const groups = groupProductsByCategory(products);
   const categories = portalCategories(products);
+  const settings: VenueMarketSettings = {
+    marketLive: venue.marketLive,
+    crashIntervalMinutes: venue.crashIntervalMinutes,
+    launchDate: venue.launchDate,
+    launchStartTime: venue.launchStartTime,
+    launchEndTime: venue.launchEndTime,
+  };
 
   return (
     <section className="portal-start-page">
       <h1 className="portal-page-title">Portal</h1>
-      <PortalLaunchStrip />
+      <PortalLaunchStrip onSettingsChange={onVenueSettingsChange} settings={settings} />
       <PortalCategoryFilters categories={categories} />
       <div className="portal-drink-list">
         <section className="portal-drink-group">

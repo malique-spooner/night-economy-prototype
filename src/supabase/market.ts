@@ -1,5 +1,6 @@
 import { seedProducts, seedVenue } from "../data/seed";
-import type { MarketProduct, Venue } from "../engine/types";
+import type { CrashIntervalMinutes, MarketProduct, Venue, VenueMarketSettings } from "../engine/types";
+import { defaultVenueMarketSettings, isCrashIntervalMinutes, normalizeTimeInput } from "../engine/venueSettings";
 import { supabase } from "./client";
 
 export type MarketState = {
@@ -23,12 +24,19 @@ export type MarketProductPatch = Partial<
   >
 >;
 
+export type VenueMarketSettingsPatch = Partial<VenueMarketSettings>;
+
 export type VenueRow = {
   id: string;
   slug: string;
   name: string;
   currency: string;
   timezone: string;
+  market_live?: boolean | null;
+  crash_interval_minutes?: number | null;
+  launch_date?: string | null;
+  launch_start_time?: string | null;
+  launch_end_time?: string | null;
 };
 
 export type MarketProductRow = {
@@ -47,12 +55,22 @@ export type MarketProductRow = {
 };
 
 export function mapVenueRow(row: VenueRow): Venue {
+  const defaults = defaultVenueMarketSettings();
+  const crashIntervalMinutes = isCrashIntervalMinutes(row.crash_interval_minutes)
+    ? row.crash_interval_minutes
+    : defaults.crashIntervalMinutes;
+
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     currency: row.currency,
     timezone: row.timezone,
+    marketLive: row.market_live ?? defaults.marketLive,
+    crashIntervalMinutes,
+    launchDate: row.launch_date ?? defaults.launchDate,
+    launchStartTime: normalizeTimeInput(row.launch_start_time, defaults.launchStartTime),
+    launchEndTime: normalizeTimeInput(row.launch_end_time, defaults.launchEndTime),
   };
 }
 
@@ -104,6 +122,18 @@ export async function updateMarketProduct(productId: string, patch: MarketProduc
   return { persisted: true as const };
 }
 
+export async function updateVenueMarketSettings(venueId: string, patch: VenueMarketSettingsPatch) {
+  if (!supabase) return { persisted: false as const };
+
+  const rowPatch = toVenueMarketSettingsRowPatch(patch);
+  if (!Object.keys(rowPatch).length) return { persisted: true as const };
+
+  const { error } = await supabase.from("venues").update(rowPatch).eq("id", venueId);
+  if (error) throw error;
+
+  return { persisted: true as const };
+}
+
 function toMarketProductRowPatch(patch: MarketProductPatch) {
   return {
     ...(patch.name !== undefined ? { display_name: patch.name } : {}),
@@ -115,6 +145,19 @@ function toMarketProductRowPatch(patch: MarketProductPatch) {
     ...(patch.isLive !== undefined ? { is_live: patch.isLive } : {}),
     ...(patch.isSoldOut !== undefined ? { is_sold_out: patch.isSoldOut } : {}),
     ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function toVenueMarketSettingsRowPatch(patch: VenueMarketSettingsPatch) {
+  return {
+    ...(patch.marketLive !== undefined ? { market_live: patch.marketLive } : {}),
+    ...(patch.crashIntervalMinutes !== undefined
+      ? { crash_interval_minutes: patch.crashIntervalMinutes as CrashIntervalMinutes }
+      : {}),
+    ...(patch.launchDate !== undefined ? { launch_date: patch.launchDate } : {}),
+    ...(patch.launchStartTime !== undefined ? { launch_start_time: patch.launchStartTime } : {}),
+    ...(patch.launchEndTime !== undefined ? { launch_end_time: patch.launchEndTime } : {}),
     updated_at: new Date().toISOString(),
   };
 }

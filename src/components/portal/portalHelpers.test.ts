@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { MarketProduct } from "../../engine/types";
-import { canEditMarketProducts, normalizeMarketProductPatch, portalAccessMessage } from "./portalHelpers";
+import {
+  canEditMarketProducts,
+  canManageVenueSettings,
+  normalizeMarketProductPatch,
+  portalAccessMessage,
+  venueSettingsAccessMessage,
+} from "./portalHelpers";
 
 const product: MarketProduct = {
   id: "mp_test",
@@ -82,5 +88,26 @@ describe("portalAccessMessage", () => {
     expect(portalAccessMessage({ isSignedIn: true, isCheckingAccess: false, role: "owner", source: "supabase" })).toBe(
       "Can edit as owner",
     );
+  });
+});
+
+describe("canManageVenueSettings", () => {
+  it("limits Supabase venue settings to owners and admins", () => {
+    expect(canManageVenueSettings({ role: null, source: "seed" })).toBe(true);
+    expect(canManageVenueSettings({ role: "owner", source: "supabase" })).toBe(true);
+    expect(canManageVenueSettings({ role: "admin", source: "supabase" })).toBe(true);
+    expect(canManageVenueSettings({ role: "staff", source: "supabase" })).toBe(false);
+    expect(canManageVenueSettings({ role: null, source: "supabase" })).toBe(false);
+  });
+});
+
+describe("venueSettingsAccessMessage", () => {
+  it("explains who can save launch settings", () => {
+    expect(venueSettingsAccessMessage({ role: null, source: "seed" })).toBe("Demo launch settings");
+    expect(venueSettingsAccessMessage({ role: "admin", source: "supabase" })).toBe("Launch settings can be saved");
+    expect(venueSettingsAccessMessage({ role: "staff", source: "supabase" })).toBe(
+      "Owner or admin access required",
+    );
+    expect(venueSettingsAccessMessage({ role: null, source: "supabase" })).toBe("Sign in as an owner or admin");
   });
 });
