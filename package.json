@@ -14,6 +14,7 @@
     "check:env": "node scripts/validate-env.mjs",
     "runtime:verify": "node scripts/verify-runtime.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
+    "supabase:grant-operator": "node scripts/print-operator-grant-sql.mjs",
     "supabase:verify-sql": "node scripts/verify-supabase-sql.mjs",
     "supabase:status": "node scripts/check-supabase-setup.mjs",
     "supabase:functions": "node scripts/verify-supabase-functions.mjs",

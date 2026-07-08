@@ -47,7 +47,13 @@ Apply the output in the Supabase SQL editor for the target project. The bundle i
 007_market_product_inserts.sql
 ```
 
-After applying SQL, create a Supabase Auth operator user and grant access with the `venue_members` insert shown in `supabase/README.md`.
+After applying SQL, create a Supabase Auth operator user and print the venue access grant:
+
+```bash
+npm run supabase:grant-operator -- --email=operator@example.com --role=owner --venue=ven_demo
+```
+
+Copy the printed SQL into the Supabase SQL editor.
 
 ## 3. Supabase Edge Function
 

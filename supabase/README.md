@@ -13,13 +13,11 @@ Secrets such as `SUPABASE_SERVICE_ROLE_KEY` and `SCHEDULER_SECRET` must live in 
 
 Portal writes are protected by `venue_members` RLS. After creating a Supabase Auth user, grant access from the SQL editor:
 
-```sql
-insert into public.venue_members (venue_id, user_id, role)
-select 'ven_demo', id, 'owner'
-from auth.users
-where email = 'operator@example.com'
-on conflict (venue_id, user_id) do update set role = excluded.role;
+```bash
+npm run supabase:grant-operator -- --email=operator@example.com --role=owner --venue=ven_demo
 ```
+
+Copy the printed SQL into the Supabase SQL editor. Expected affected rows: `1`.
 
 Use `owner` or `admin` for venue settings. Use `staff` for market product edits.
 
