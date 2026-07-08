@@ -4,6 +4,7 @@ import { MarketBoard } from "../components/tv/MarketBoard";
 import { TvBackground } from "../components/tv/TvBackground";
 import { TvStoryPanel } from "../components/tv/TvStoryPanel";
 import { TvTopBar } from "../components/tv/TvTopBar";
+import { marketStatusLabel } from "../components/tv/tvHelpers";
 import { useMarketState } from "../hooks/useMarketState";
 import { PageSwitcher } from "./PageSwitcher";
 
@@ -31,7 +32,7 @@ export function Tv({ venueSlug }: Props) {
       <TvBackground />
       <div className="root">
         <div className="ui">
-          <TvTopBar clock={clock} sourceLabel={sourceLabel} />
+          <TvTopBar clock={clock} marketStatusLabel={marketStatusLabel(state.venue)} sourceLabel={sourceLabel} />
           <div className="body">
             <MarketBoard products={state.products} venue={state.venue} />
             <div className="divv"></div>

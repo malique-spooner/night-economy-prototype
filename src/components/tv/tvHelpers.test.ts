@@ -8,7 +8,10 @@ import {
   getFeaturedProducts,
   getStoryProduct,
   groupProductsByCategory,
+  marketBoardLabel,
+  marketStatusLabel,
   movementLabel,
+  mobilePriceStatusLabel,
   productTrend,
 } from "./tvHelpers";
 
@@ -92,5 +95,14 @@ describe("tvHelpers", () => {
 
     expect(getStoryProduct(products)?.id).toBe("leader");
     expect(getStoryProduct([])).toBeNull();
+  });
+
+  it("labels the venue market status", () => {
+    expect(marketStatusLabel({ marketLive: true })).toBe("Market open");
+    expect(marketStatusLabel({ marketLive: false })).toBe("Market paused");
+    expect(marketBoardLabel({ marketLive: true })).toBe("Live Market Board");
+    expect(marketBoardLabel({ marketLive: false })).toBe("Paused Market Board");
+    expect(mobilePriceStatusLabel({ marketLive: true })).toBe("Live prices");
+    expect(mobilePriceStatusLabel({ marketLive: false })).toBe("Paused prices");
   });
 });

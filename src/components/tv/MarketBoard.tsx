@@ -7,6 +7,7 @@ import {
   categoryLabel,
   getFeaturedProducts,
   groupProductsByCategory,
+  marketBoardLabel,
 } from "./tvHelpers";
 
 type Props = {
@@ -21,7 +22,7 @@ export function MarketBoard({ products, venue }: Props) {
   return (
     <div className="board">
       <div className="board-hdr">
-        <span className="slbl">Live Market Board</span>
+        <span className="slbl">{marketBoardLabel(venue)}</span>
         <div className="board-view-indicator">
           <span className="board-view-lbl">COCKTAILS</span>
           <div className="board-dots">

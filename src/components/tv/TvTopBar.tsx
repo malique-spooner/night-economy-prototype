@@ -1,15 +1,16 @@
 type Props = {
   clock: string;
+  marketStatusLabel: string;
   sourceLabel: string;
 };
 
-export function TvTopBar({ clock, sourceLabel }: Props) {
+export function TvTopBar({ clock, marketStatusLabel, sourceLabel }: Props) {
   return (
     <div className="topbar">
       <div className="brand">Night Economy</div>
       <div className="live-pill">
         <div className="live-dot"></div>
-        <span>Market open</span>
+        <span>{marketStatusLabel}</span>
       </div>
       <div className="top-right">
         <div className="trade-count">{sourceLabel}</div>

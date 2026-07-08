@@ -1,4 +1,4 @@
-import type { MarketProduct } from "../../engine/types";
+import type { MarketProduct, Venue } from "../../engine/types";
 
 export type ProductTrend = "up" | "dn";
 
@@ -26,6 +26,18 @@ export function categoryClass(category: string) {
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
+}
+
+export function marketStatusLabel(venue: Pick<Venue, "marketLive">) {
+  return venue.marketLive ? "Market open" : "Market paused";
+}
+
+export function marketBoardLabel(venue: Pick<Venue, "marketLive">) {
+  return venue.marketLive ? "Live Market Board" : "Paused Market Board";
+}
+
+export function mobilePriceStatusLabel(venue: Pick<Venue, "marketLive">) {
+  return venue.marketLive ? "Live prices" : "Paused prices";
 }
 
 export function movementLabel(product: MarketProduct) {

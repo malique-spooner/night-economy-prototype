@@ -30,7 +30,7 @@ export function Menu({ venueSlug }: Props) {
         <div className="mobile-shell">
           <MobileHero />
           <main className="mobile-menu">
-            <MobileMarketBrief products={state.products} />
+            <MobileMarketBrief products={state.products} venue={state.venue} />
             <MobileCategoryRail categories={categoryLinks} />
             {groups.map(([category, products]) => (
               <MobileMarketSection category={category} products={products} venue={state.venue} key={category} />
