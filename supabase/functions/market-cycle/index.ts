@@ -10,6 +10,7 @@ type MarketProduct = {
 
 type Venue = {
   id: string;
+  market_live: boolean;
 };
 
 type PriceDecision = {
@@ -56,12 +57,23 @@ async function handleRequest(request: Request) {
   };
 
   const venues = await restJson<Venue[]>(
-    `${supabaseUrl}/rest/v1/venues?slug=eq.${encodeURIComponent(venueSlug)}&select=id`,
+    `${supabaseUrl}/rest/v1/venues?slug=eq.${encodeURIComponent(venueSlug)}&select=id,market_live`,
     { headers },
     "load venue",
   );
   const venue = venues?.[0];
   if (!venue) return json({ error: "Venue not found" }, 404);
+
+  if (!venue.market_live) {
+    return json({
+      ok: true,
+      engine: "night-economy-v1",
+      skipped: true,
+      reason: "Market is paused for this venue.",
+      venueId: venue.id,
+      venueSlug,
+    });
+  }
 
   const products = await restJson<MarketProduct[]>(
     `${supabaseUrl}/rest/v1/market_products?venue_id=eq.${encodeURIComponent(venue.id)}&select=*&order=display_name.asc`,

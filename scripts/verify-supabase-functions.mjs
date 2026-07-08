@@ -26,6 +26,10 @@ const checks = [
     label: "uses sales velocity pricing input",
     pattern: /sales_velocity/,
   },
+  {
+    label: "respects venue market live state",
+    pattern: /market_live[\s\S]+Market is paused for this venue/,
+  },
 ];
 
 const forbiddenPatterns = [
