@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { PortalAccountPage } from "../components/portal/PortalAccountPage";
 import { PortalAuthPanel } from "../components/portal/PortalAuthPanel";
-import { PortalSidebar } from "../components/portal/PortalSidebar";
+import { PortalSidebar, type PortalTab } from "../components/portal/PortalSidebar";
 import { PortalStartPage } from "../components/portal/PortalStartPage";
 import {
   canEditMarketProducts,
@@ -36,6 +37,8 @@ export function Portal({ venueSlug }: Props) {
   const [lastSavedMessage, setLastSavedMessage] = useState("");
   const [memberRole, setMemberRole] = useState<VenueMemberRole | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
+  const [activeTab, setActiveTab] = useState<PortalTab>("start");
+  const [signedInEmail, setSignedInEmail] = useState("");
 
   useEffect(() => {
     void refreshSession();
@@ -172,6 +175,7 @@ export function Portal({ venueSlug }: Props) {
   async function refreshSession() {
     const session = await getCurrentSession();
     setIsSignedIn(Boolean(session));
+    setSignedInEmail(session?.user.email ?? "");
   }
 
   async function handleSignIn() {
@@ -205,6 +209,7 @@ export function Portal({ venueSlug }: Props) {
         <div className="portal-shell">
           <div className="portal-layout">
             <PortalSidebar
+              activeTab={activeTab}
               authSlot={
                 <PortalAuthPanel
                   email={email}
@@ -220,20 +225,33 @@ export function Portal({ venueSlug }: Props) {
                 />
               }
               liveCount={liveCount}
+              onTabChange={setActiveTab}
               onSignOut={handleSignOut}
               totalCount={state.products.length}
             />
             <main className="portal-main">
               <div className="portal-workspace">
-                <PortalStartPage
-                  lastSavedMessage={lastSavedMessage}
-                  onProductAdd={handleProductAdd}
-                  onProductChange={handleProductChange}
-                  onVenueSettingsChange={handleVenueSettingsChange}
-                  products={state.products}
-                  source={state.source}
-                  venue={state.venue}
-                />
+                {activeTab === "start" ? (
+                  <PortalStartPage
+                    lastSavedMessage={lastSavedMessage}
+                    onProductAdd={handleProductAdd}
+                    onProductChange={handleProductChange}
+                    onVenueSettingsChange={handleVenueSettingsChange}
+                    products={state.products}
+                    source={state.source}
+                    venue={state.venue}
+                  />
+                ) : (
+                  <PortalAccountPage
+                    email={signedInEmail}
+                    isSignedIn={isSignedIn}
+                    liveCount={liveCount}
+                    role={memberRole}
+                    source={state.source}
+                    totalCount={state.products.length}
+                    venue={state.venue}
+                  />
+                )}
               </div>
             </main>
           </div>
