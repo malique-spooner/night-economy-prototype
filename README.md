@@ -54,6 +54,7 @@ SCHEDULER_SECRET=...
 ```
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` in the browser or Cloudflare Pages frontend variables.
+`npm run check:env` rejects service-role JWTs and Supabase secret keys in any `VITE_` browser variable.
 
 ## Cloudflare Pages
 

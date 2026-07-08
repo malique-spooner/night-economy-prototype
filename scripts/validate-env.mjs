@@ -22,8 +22,14 @@ if (env.VITE_SUPABASE_URL && !isValidSupabaseUrl(env.VITE_SUPABASE_URL)) {
 }
 
 for (const [key, value] of Object.entries(env)) {
-  if (key.startsWith("VITE_") && /service_role/i.test(value ?? "")) {
+  if (!key.startsWith("VITE_")) continue;
+
+  if (/service_role/i.test(value ?? "") || hasServiceRoleJwtClaim(value)) {
     errors.push(`${key} appears to contain a service-role secret. Never expose service-role keys to the browser.`);
+  }
+
+  if (/^sb_secret_/i.test(value ?? "")) {
+    errors.push(`${key} appears to contain a Supabase secret key. Use the publishable key in browser variables.`);
   }
 }
 
@@ -70,4 +76,21 @@ function isValidSupabaseUrl(value) {
   } catch {
     return false;
   }
+}
+
+function hasServiceRoleJwtClaim(value = "") {
+  const parts = String(value).split(".");
+  if (parts.length < 2) return false;
+
+  try {
+    const payload = JSON.parse(Buffer.from(toBase64(parts[1]), "base64").toString("utf8"));
+    return payload.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
+function toBase64(base64Url) {
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  return base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
 }
