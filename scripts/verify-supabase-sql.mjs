@@ -89,6 +89,21 @@ function checkRequiredPatterns() {
       source: migrationSql["007_market_product_inserts.sql"],
       pattern: /grant insert[\s\S]+on public\.market_products to authenticated/i,
     },
+    {
+      label: "venue market settings columns",
+      source: migrationSql["006_venue_market_settings.sql"],
+      pattern: /add column if not exists market_live[\s\S]+add column if not exists crash_interval_minutes[\s\S]+add column if not exists launch_date[\s\S]+add column if not exists launch_start_time[\s\S]+add column if not exists launch_end_time/i,
+    },
+    {
+      label: "venue crash interval constraint",
+      source: migrationSql["006_venue_market_settings.sql"],
+      pattern: /venues_crash_interval_minutes_check[\s\S]+check \(crash_interval_minutes in \(15, 30, 60, 120\)\)/i,
+    },
+    {
+      label: "venue market settings update grant excludes anon",
+      source: migrationSql["006_venue_market_settings.sql"],
+      pattern: /grant update \([\s\S]+market_live[\s\S]+crash_interval_minutes[\s\S]+launch_date[\s\S]+launch_start_time[\s\S]+launch_end_time[\s\S]+updated_at[\s\S]+\) on public\.venues to authenticated/i,
+    },
   ];
 
   for (const check of required) {
@@ -113,6 +128,10 @@ function checkForbiddenPatterns() {
     {
       label: "anonymous market product writes",
       pattern: /grant\s+(insert|update|delete)[^;]+on public\.market_products\s+to\s+anon/i,
+    },
+    {
+      label: "anonymous venue writes",
+      pattern: /grant\s+(insert|update|delete)[^;]+on public\.venues\s+to\s+anon/i,
     },
   ];
 
