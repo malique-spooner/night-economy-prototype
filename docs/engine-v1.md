@@ -61,3 +61,12 @@ Night Economy V1 is a rule-based sales engine:
 - use demand to steer price
 - keep every move explainable
 - keep the board and Lightspeed in sync
+
+## Verification
+
+```bash
+npm run test -- src/engine/pricing.test.ts
+npm run pricing:sync
+```
+
+`npm run pricing:sync` checks that the Supabase `market-cycle` Edge Function still matches the frontend pricing thresholds and reason text while the function remains self-contained for Deno.

@@ -22,6 +22,11 @@ const checks = [
     required: true,
   },
   {
+    name: "Pricing engine sync",
+    command: ["npm", "run", "pricing:sync"],
+    required: true,
+  },
+  {
     name: "Supabase local env",
     command: ["npm", "run", "supabase:status"],
     required: true,
