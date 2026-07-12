@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "setup:env": "node scripts/create-local-env.mjs",
     "build": "tsc -b && vite build",
     "build:production": "npm run runtime:verify && npm run check:env && npm run build",
     "cloudflare:config": "node scripts/verify-cloudflare-pages.mjs",

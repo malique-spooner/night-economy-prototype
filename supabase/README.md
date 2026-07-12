@@ -67,6 +67,12 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
+Create the local file from the example when needed:
+
+```bash
+npm run setup:env
+```
+
 Check the local setup without printing secrets:
 
 ```bash
