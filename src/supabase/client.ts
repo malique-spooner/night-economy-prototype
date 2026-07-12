@@ -1,10 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
+import { createSupabaseBrowserConfig } from "./config";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseConfig = createSupabaseBrowserConfig(import.meta.env);
 
 export const supabaseStatus = {
-  ready: Boolean(supabaseUrl && supabasePublishableKey),
+  ready: supabaseConfig.ready,
+  reason: supabaseConfig.reason,
 };
 
-export const supabase = supabaseStatus.ready ? createClient(supabaseUrl, supabasePublishableKey) : null;
+export const supabase = supabaseStatus.ready
+  ? createClient(supabaseConfig.url, supabaseConfig.publishableKey)
+  : null;
