@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { mapMarketProductRow, mapVenueRow, type MarketProductRow, type VenueRow } from "./market";
+import {
+  mapMarketProductRow,
+  mapVenueRow,
+  throwIfSupabaseQueryError,
+  type MarketProductRow,
+  type VenueRow,
+} from "./market";
 
 const venueRow: VenueRow = {
   id: "venue_123",
@@ -82,5 +88,21 @@ describe("mapMarketProductRow", () => {
 
   it("defaults missing sales velocity for older rows", () => {
     expect(mapMarketProductRow({ ...productRow, sales_velocity: null }).salesVelocity).toBe(4);
+  });
+});
+
+describe("throwIfSupabaseQueryError", () => {
+  it("does nothing when Supabase returns no error", () => {
+    expect(() => throwIfSupabaseQueryError(null, "Could not load venue")).not.toThrow();
+  });
+
+  it("keeps Supabase query failures visible instead of silently falling back to seed data", () => {
+    expect(() =>
+      throwIfSupabaseQueryError({ message: "permission denied for table market_products" }, "Could not load products"),
+    ).toThrow("Could not load products: permission denied for table market_products");
+  });
+
+  it("uses the fallback message when Supabase does not provide detail", () => {
+    expect(() => throwIfSupabaseQueryError({}, "Could not load venue")).toThrow("Could not load venue");
   });
 });

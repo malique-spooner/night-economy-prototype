@@ -56,6 +56,10 @@ export type MarketProductRow = {
   priority: boolean;
 };
 
+type SupabaseQueryError = {
+  message?: string;
+};
+
 export function mapVenueRow(row: VenueRow): Venue {
   const defaults = defaultVenueMarketSettings();
   const crashIntervalMinutes = isCrashIntervalMinutes(row.crash_interval_minutes)
@@ -93,17 +97,26 @@ export function mapMarketProductRow(row: MarketProductRow): MarketProduct {
   };
 }
 
+export function throwIfSupabaseQueryError(error: SupabaseQueryError | null | undefined, fallbackMessage: string) {
+  if (!error) return;
+
+  throw new Error(error.message ? `${fallbackMessage}: ${error.message}` : fallbackMessage);
+}
+
 export async function getMarketState(venueSlug: string): Promise<MarketState> {
   if (!supabase) return { venue: seedVenue, products: seedProducts, source: "seed" };
 
-  const { data: venue } = await supabase.from("venues").select("*").eq("slug", venueSlug).maybeSingle();
+  const { data: venue, error: venueError } = await supabase.from("venues").select("*").eq("slug", venueSlug).maybeSingle();
+  throwIfSupabaseQueryError(venueError, "Could not load venue");
+
   if (!venue) return { venue: seedVenue, products: seedProducts, source: "seed" };
 
-  const { data: products } = await supabase
+  const { data: products, error: productsError } = await supabase
     .from("market_products")
     .select("*")
     .eq("venue_id", venue.id)
     .order("display_name");
+  throwIfSupabaseQueryError(productsError, "Could not load market products");
 
   return {
     venue: mapVenueRow(venue),
