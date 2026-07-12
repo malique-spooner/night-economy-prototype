@@ -14,7 +14,7 @@ type Props = {
 export function Site({ venueSlug }: Props) {
   return (
     <>
-      <PageSwitcher active="site" />
+      <PageSwitcher active="site" venueSlug={venueSlug} />
       <section id="siteView" className="alt-view site-view active">
         <div className="site-shell">
           <SiteHero />

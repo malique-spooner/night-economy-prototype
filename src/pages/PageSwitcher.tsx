@@ -1,18 +1,31 @@
 type Props = {
   active: "site" | "tv" | "mobile" | "portal";
+  venueSlug: string;
 };
 
-const links = [
-  ["site", "Site", "/react-preview.html?view=site"],
-  ["tv", "TV", "/react-preview.html?view=tv"],
-  ["mobile", "Mobile", "/react-preview.html?view=mobile"],
-  ["portal", "Portal", "/react-preview.html?view=portal"],
-] as const;
+type PageSwitcherLink = {
+  href: string;
+  id: Props["active"];
+  label: string;
+};
 
-export function PageSwitcher({ active }: Props) {
+export function buildPageSwitcherLinks(venueSlug: string): PageSwitcherLink[] {
+  const slug = encodeURIComponent(venueSlug);
+
+  return [
+    { id: "site", label: "Site", href: `/venue/${slug}` },
+    { id: "tv", label: "TV", href: `/tv/${slug}` },
+    { id: "mobile", label: "Mobile", href: `/menu/${slug}` },
+    { id: "portal", label: "Portal", href: `/app/${slug}` },
+  ];
+}
+
+export function PageSwitcher({ active, venueSlug }: Props) {
+  const links = buildPageSwitcherLinks(venueSlug);
+
   return (
     <nav className="page-switcher" aria-label="Page switcher">
-      {links.map(([id, label, href]) => (
+      {links.map(({ href, id, label }) => (
         <a className={`page-chip ${active === id ? "active" : ""}`} href={href} data-view={id} key={id}>
           {label}
         </a>

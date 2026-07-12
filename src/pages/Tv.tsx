@@ -28,7 +28,7 @@ export function Tv({ venueSlug }: Props) {
 
   return (
     <>
-      <PageSwitcher active="tv" />
+      <PageSwitcher active="tv" venueSlug={venueSlug} />
       <TvBackground />
       <div className="root">
         <div className="ui">

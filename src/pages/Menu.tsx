@@ -25,7 +25,7 @@ export function Menu({ venueSlug }: Props) {
 
   return (
     <>
-      <PageSwitcher active="mobile" />
+      <PageSwitcher active="mobile" venueSlug={venueSlug} />
       <section id="mobileView" className="alt-view mobile-view active">
         <div className="mobile-shell">
           <MobileHero />

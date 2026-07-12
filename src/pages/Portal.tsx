@@ -204,7 +204,7 @@ export function Portal({ venueSlug }: Props) {
 
   return (
     <>
-      <PageSwitcher active="portal" />
+      <PageSwitcher active="portal" venueSlug={venueSlug} />
       <section id="portalView" className="alt-view portal-view active">
         <div className="portal-shell">
           <div className="portal-layout">
