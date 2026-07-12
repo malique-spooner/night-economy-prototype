@@ -13,6 +13,7 @@ npm run launch:readiness
 ```
 
 `npm run check` includes a Supabase SQL/RLS verifier so migration guardrails are checked before deployment.
+The preview smoke test also verifies the Cloudflare redirect map for `/tv/*`, `/menu/*`, `/app/*`, and `/venue/*`.
 `npm run launch:readiness` summarizes runtime, Cloudflare, Supabase SQL, function, env, and live-readiness status.
 
 For a production build, also verify the real public Supabase variables:
@@ -121,6 +122,7 @@ Check:
 /tv/demo-venue
 /menu/demo-venue
 /app/demo-venue
+/venue/demo-venue
 ```
 
 Then test one real signup lead and one portal product edit against Supabase.

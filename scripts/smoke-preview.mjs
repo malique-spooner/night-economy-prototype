@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 const host = "127.0.0.1";
 const port = Number(process.env.SMOKE_PREVIEW_PORT ?? 4173);
 const baseUrl = `http://${host}:${port}`;
-const routes = [
+const directRoutes = [
   "/",
   "/react-preview.html?view=site",
   "/react-preview.html?view=tv",
@@ -13,7 +13,7 @@ const routes = [
 ];
 
 await run("npm", ["run", "build"]);
-await assertCloudflareRedirects();
+const cloudflareRoutes = await assertCloudflareRedirects();
 
 const server = spawn(
   "npm",
@@ -33,12 +33,20 @@ try {
   await Promise.race([waitForServer(`${baseUrl}/`), earlyExit]);
   previewReady = true;
 
-  for (const route of routes) {
+  for (const route of directRoutes) {
     const response = await fetch(`${baseUrl}${route}`);
     if (!response.ok) {
       throw new Error(`${route} returned ${response.status}`);
     }
     console.log(`ok ${route}`);
+  }
+
+  for (const [route, target] of Object.entries(cloudflareRoutes)) {
+    const response = await fetch(`${baseUrl}${target}`);
+    if (!response.ok) {
+      throw new Error(`${route} resolved to ${target}, but ${target} returned ${response.status}`);
+    }
+    console.log(`ok ${route} -> ${target}`);
   }
 
   console.log("Preview smoke test passed.");
@@ -120,6 +128,8 @@ async function assertCloudflareRedirects() {
       throw new Error(`Cloudflare route ${route} resolved to ${actualTarget}, expected ${target}.`);
     }
   }
+
+  return expectedRouteTargets;
 }
 
 function parseRedirectRules(source) {
