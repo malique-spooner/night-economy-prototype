@@ -162,8 +162,8 @@ export async function updateVenueMarketSettings(venueId: string, patch: VenueMar
   return { persisted: true as const };
 }
 
-function toMarketProductRowPatch(patch: MarketProductPatch) {
-  return {
+export function toMarketProductRowPatch(patch: MarketProductPatch) {
+  const rowPatch = {
     ...(patch.name !== undefined ? { display_name: patch.name } : {}),
     ...(patch.category !== undefined ? { category: patch.category } : {}),
     ...(patch.basePriceMinor !== undefined ? { base_price_minor: patch.basePriceMinor } : {}),
@@ -173,8 +173,9 @@ function toMarketProductRowPatch(patch: MarketProductPatch) {
     ...(patch.isLive !== undefined ? { is_live: patch.isLive } : {}),
     ...(patch.isSoldOut !== undefined ? { is_sold_out: patch.isSoldOut } : {}),
     ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-    updated_at: new Date().toISOString(),
   };
+
+  return withUpdatedAt(rowPatch);
 }
 
 function toMarketProductInsertRow(venueId: string, product: MarketProductCreate) {
@@ -195,8 +196,8 @@ function toMarketProductInsertRow(venueId: string, product: MarketProductCreate)
   };
 }
 
-function toVenueMarketSettingsRowPatch(patch: VenueMarketSettingsPatch) {
-  return {
+export function toVenueMarketSettingsRowPatch(patch: VenueMarketSettingsPatch) {
+  const rowPatch = {
     ...(patch.marketLive !== undefined ? { market_live: patch.marketLive } : {}),
     ...(patch.crashIntervalMinutes !== undefined
       ? { crash_interval_minutes: patch.crashIntervalMinutes as CrashIntervalMinutes }
@@ -204,6 +205,16 @@ function toVenueMarketSettingsRowPatch(patch: VenueMarketSettingsPatch) {
     ...(patch.launchDate !== undefined ? { launch_date: patch.launchDate } : {}),
     ...(patch.launchStartTime !== undefined ? { launch_start_time: patch.launchStartTime } : {}),
     ...(patch.launchEndTime !== undefined ? { launch_end_time: patch.launchEndTime } : {}),
+  };
+
+  return withUpdatedAt(rowPatch);
+}
+
+function withUpdatedAt<T extends Record<string, unknown>>(rowPatch: T) {
+  if (!Object.keys(rowPatch).length) return rowPatch;
+
+  return {
+    ...rowPatch,
     updated_at: new Date().toISOString(),
   };
 }

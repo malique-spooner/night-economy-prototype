@@ -3,6 +3,8 @@ import {
   mapMarketProductRow,
   mapVenueRow,
   throwIfSupabaseQueryError,
+  toMarketProductRowPatch,
+  toVenueMarketSettingsRowPatch,
   type MarketProductRow,
   type VenueRow,
 } from "./market";
@@ -104,5 +106,33 @@ describe("throwIfSupabaseQueryError", () => {
 
   it("uses the fallback message when Supabase does not provide detail", () => {
     expect(() => throwIfSupabaseQueryError({}, "Could not load venue")).toThrow("Could not load venue");
+  });
+});
+
+describe("toMarketProductRowPatch", () => {
+  it("returns an empty row patch when there are no product changes", () => {
+    expect(toMarketProductRowPatch({})).toEqual({});
+  });
+
+  it("maps product patches to database columns and adds updated_at only for real changes", () => {
+    expect(toMarketProductRowPatch({ name: "House Lager", isLive: false })).toMatchObject({
+      display_name: "House Lager",
+      is_live: false,
+      updated_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    });
+  });
+});
+
+describe("toVenueMarketSettingsRowPatch", () => {
+  it("returns an empty row patch when there are no venue setting changes", () => {
+    expect(toVenueMarketSettingsRowPatch({})).toEqual({});
+  });
+
+  it("maps venue setting patches to database columns and adds updated_at only for real changes", () => {
+    expect(toVenueMarketSettingsRowPatch({ marketLive: true, crashIntervalMinutes: 60 })).toMatchObject({
+      market_live: true,
+      crash_interval_minutes: 60,
+      updated_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    });
   });
 });
