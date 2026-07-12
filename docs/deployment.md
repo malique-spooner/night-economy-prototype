@@ -2,6 +2,8 @@
 
 Use this order when taking the prototype-shaped app toward a real deployment.
 
+For the detailed Supabase connection flow, see [supabase-handoff.md](./supabase-handoff.md).
+
 ## 1. Local Gates
 
 ```bash

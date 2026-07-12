@@ -9,6 +9,8 @@ functions/    Edge Functions for secure backend jobs
 
 Secrets such as `SUPABASE_SERVICE_ROLE_KEY` and `SCHEDULER_SECRET` must live in Supabase secrets or local shell environment only. They must never be exposed through the frontend.
 
+For the click-by-click handoff flow, see `docs/supabase-handoff.md`.
+
 ## Operator Access
 
 Portal writes are protected by `venue_members` RLS. After creating a Supabase Auth user, grant access from the SQL editor:
