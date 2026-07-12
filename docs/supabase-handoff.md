@@ -30,6 +30,7 @@ Verify local config:
 
 ```bash
 npm run supabase:status
+npm run launch:readiness
 ```
 
 ## 2. Database Setup

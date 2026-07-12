@@ -9,9 +9,11 @@ For the detailed Supabase connection flow, see [supabase-handoff.md](./supabase-
 ```bash
 npm install
 npm run check
+npm run launch:readiness
 ```
 
 `npm run check` includes a Supabase SQL/RLS verifier so migration guardrails are checked before deployment.
+`npm run launch:readiness` summarizes runtime, Cloudflare, Supabase SQL, function, env, and live-readiness status.
 
 For a production build, also verify the real public Supabase variables:
 
