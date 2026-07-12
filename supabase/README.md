@@ -87,6 +87,8 @@ After applying migrations and setting `.env.local`, verify public read access:
 npm run supabase:smoke-live
 ```
 
+The smoke check validates the runtime columns used by the app, including launch settings and product sales velocity.
+
 Verify the migration security guardrails:
 
 ```bash

@@ -47,6 +47,8 @@ Paste the output into the Supabase SQL editor and run it once. Then verify the p
 npm run supabase:smoke-live
 ```
 
+This smoke check reads the same venue and product columns used by the React pages and market job, so it catches missing migrations before deployment.
+
 ## 3. Operator Access
 
 Create the operator in Supabase Auth, then print the access grant:

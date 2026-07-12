@@ -34,23 +34,52 @@ const supabase = createClient(supabaseUrl, publishableKey, {
   auth: { persistSession: false },
 });
 
+const venueColumns = [
+  "id",
+  "slug",
+  "name",
+  "currency",
+  "timezone",
+  "market_live",
+  "crash_interval_minutes",
+  "launch_date",
+  "launch_start_time",
+  "launch_end_time",
+].join(",");
+const productColumns = [
+  "id",
+  "market_symbol",
+  "display_name",
+  "category",
+  "base_price_minor",
+  "current_price_minor",
+  "floor_price_minor",
+  "ceiling_price_minor",
+  "sales_velocity",
+  "is_live",
+  "is_sold_out",
+  "priority",
+].join(",");
+
 const { data: venue, error: venueError } = await supabase
   .from("venues")
-  .select("id,slug,name,currency,timezone,market_live")
+  .select(venueColumns)
   .eq("slug", venueSlug)
   .maybeSingle();
 
 if (venueError) fail(`Could not read venue '${venueSlug}': ${venueError.message}`);
 if (!venue) fail(`Venue '${venueSlug}' was not found. Apply migrations/seeds first.`);
+assertRequiredValues("venue", venue, venueColumns.split(","));
 
 const { data: products, error: productsError } = await supabase
   .from("market_products")
-  .select("id,display_name,current_price_minor,is_live,is_sold_out")
+  .select(productColumns)
   .eq("venue_id", venue.id)
   .limit(3);
 
 if (productsError) fail(`Could not read market products: ${productsError.message}`);
 if (!products?.length) fail(`Venue '${venueSlug}' has no market products.`);
+products.forEach(product => assertRequiredValues("market product", product, productColumns.split(",")));
 
 console.log("Live Supabase smoke check passed.");
 console.log(`- venue: ${venue.name} (${venue.slug})`);
@@ -61,6 +90,11 @@ function fail(message) {
   console.error("Live Supabase smoke check failed:");
   console.error(`- ${message}`);
   process.exit(1);
+}
+
+function assertRequiredValues(label, row, columns) {
+  const missing = columns.filter(column => row[column] === undefined || row[column] === null);
+  if (missing.length) fail(`${label} is missing required columns: ${missing.join(", ")}`);
 }
 
 function readEnvFile(path) {
