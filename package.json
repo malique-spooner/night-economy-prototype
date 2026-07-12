@@ -18,6 +18,7 @@
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "supabase:grant-operator": "node scripts/print-operator-grant-sql.mjs",
     "supabase:smoke-live": "node scripts/smoke-supabase-live.mjs",
+    "supabase:verify-smoke": "node scripts/verify-live-smoke-script.mjs",
     "supabase:verify-sql": "node scripts/verify-supabase-sql.mjs",
     "supabase:status": "node scripts/check-supabase-setup.mjs",
     "supabase:functions": "node scripts/verify-supabase-functions.mjs",
@@ -26,7 +27,7 @@
     "smoke:preview": "node scripts/smoke-preview.mjs",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run runtime:verify && npm run lint && npm run test && npm run cloudflare:config && npm run supabase:verify-sql && npm run supabase:functions && npm run pricing:sync && npm run smoke:preview"
+    "check": "npm run runtime:verify && npm run lint && npm run test && npm run cloudflare:config && npm run supabase:verify-sql && npm run supabase:functions && npm run supabase:verify-smoke && npm run pricing:sync && npm run smoke:preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",

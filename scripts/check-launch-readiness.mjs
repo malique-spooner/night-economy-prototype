@@ -22,6 +22,11 @@ const checks = [
     required: true,
   },
   {
+    name: "Live smoke script guardrails",
+    command: ["npm", "run", "supabase:verify-smoke"],
+    required: true,
+  },
+  {
     name: "Pricing engine sync",
     command: ["npm", "run", "pricing:sync"],
     required: true,

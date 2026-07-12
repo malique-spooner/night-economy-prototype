@@ -12,7 +12,7 @@ const publishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ?? "";
 const venueSlug = env.SMOKE_VENUE_SLUG?.trim() || "demo-venue";
 
 const errors = [];
-if (!supabaseUrl || supabaseUrl === "..." || !supabaseUrl.endsWith(".supabase.co")) {
+if (!supabaseUrl || supabaseUrl === "..." || !isValidSupabaseUrl(supabaseUrl)) {
   errors.push("VITE_SUPABASE_URL must be set to a Supabase project URL.");
 }
 
@@ -120,6 +120,15 @@ function stripQuotes(value) {
   }
 
   return value;
+}
+
+function isValidSupabaseUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
 }
 
 function hasServiceRoleJwtClaim(value = "") {
