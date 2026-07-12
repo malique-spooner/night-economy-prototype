@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { MarketProduct } from "../../engine/types";
 import {
+  applyMarketProductPatch,
+  applyVenueSettingsPatch,
   canEditMarketProducts,
   canManageVenueSettings,
   normalizeMarketProductPatch,
@@ -59,6 +61,44 @@ describe("normalizeMarketProductPatch", () => {
   it("trims names and keeps the old name when the edit is blank", () => {
     expect(normalizeMarketProductPatch(product, { name: "  Better Drink  " })).toEqual({ name: "Better Drink" });
     expect(normalizeMarketProductPatch(product, { name: "  " })).toEqual({ name: "Test Drink" });
+  });
+});
+
+describe("applyMarketProductPatch", () => {
+  it("updates only the selected product", () => {
+    const products = [product, { ...product, id: "mp_other", name: "Other Drink" }];
+
+    expect(applyMarketProductPatch(products, "mp_test", { name: "Renamed" })).toEqual([
+      { ...product, name: "Renamed" },
+      { ...product, id: "mp_other", name: "Other Drink" },
+    ]);
+  });
+});
+
+describe("applyVenueSettingsPatch", () => {
+  it("updates venue launch settings without changing the rest of the venue", () => {
+    expect(
+      applyVenueSettingsPatch(
+        {
+          id: "ven_demo",
+          slug: "demo-venue",
+          name: "Demo Venue",
+          currency: "GBP",
+          timezone: "Europe/London",
+          marketLive: false,
+          crashIntervalMinutes: 30,
+          launchDate: "2026-07-12",
+          launchStartTime: "18:00",
+          launchEndTime: "23:00",
+        },
+        { marketLive: true, crashIntervalMinutes: 60 },
+      ),
+    ).toMatchObject({
+      id: "ven_demo",
+      marketLive: true,
+      crashIntervalMinutes: 60,
+      launchStartTime: "18:00",
+    });
   });
 });
 

@@ -4,6 +4,8 @@ import { PortalAuthPanel } from "../components/portal/PortalAuthPanel";
 import { PortalSidebar, type PortalTab } from "../components/portal/PortalSidebar";
 import { PortalStartPage } from "../components/portal/PortalStartPage";
 import {
+  applyMarketProductPatch,
+  applyVenueSettingsPatch,
   canEditMarketProducts,
   canManageVenueSettings,
   normalizeMarketProductPatch,
@@ -118,7 +120,7 @@ export function Portal({ venueSlug }: Props) {
 
     setState({
       ...state,
-      products: state.products.map(product => (product.id === productId ? { ...product, ...normalizedPatch } : product)),
+      products: applyMarketProductPatch(state.products, productId, normalizedPatch),
     });
 
     if (options.persist === false) {
@@ -130,6 +132,14 @@ export function Portal({ venueSlug }: Props) {
       const result = await updateMarketProduct(productId, normalizedPatch);
       setLastSavedMessage(result.persisted ? "Saved to Supabase" : "Demo change only");
     } catch (error) {
+      setState(current =>
+        current
+          ? {
+              ...current,
+              products: applyMarketProductPatch(current.products, productId, currentProduct),
+            }
+          : current,
+      );
       setLastSavedMessage(error instanceof Error ? `Not saved: ${error.message}` : "Not saved");
     }
   }
@@ -161,13 +171,15 @@ export function Portal({ venueSlug }: Props) {
       return;
     }
 
-    const nextVenue = { ...state.venue, ...patch };
+    const previousVenue = state.venue;
+    const nextVenue = applyVenueSettingsPatch(state.venue, patch);
     setState({ ...state, venue: nextVenue });
 
     try {
       const result = await updateVenueMarketSettings(state.venue.id, patch);
       setLastSavedMessage(result.persisted ? "Launch settings saved" : "Demo launch settings");
     } catch (error) {
+      setState(current => (current ? { ...current, venue: previousVenue } : current));
       setLastSavedMessage(error instanceof Error ? `Not saved: ${error.message}` : "Not saved");
     }
   }

@@ -1,5 +1,5 @@
-import type { MarketProduct } from "../../engine/types";
-import type { MarketProductPatch } from "../../supabase/market";
+import type { MarketProduct, Venue } from "../../engine/types";
+import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../supabase/market";
 import type { VenueMemberRole } from "../../supabase/memberships";
 import { categoryLabel, groupProductsByCategory } from "../tv/tvHelpers";
 
@@ -133,6 +133,18 @@ export function normalizeMarketProductPatch(product: MarketProduct, patch: Marke
       : {}),
     ...(patch.name !== undefined ? { name: patch.name.trim() || product.name } : {}),
   };
+}
+
+export function applyMarketProductPatch(
+  products: MarketProduct[],
+  productId: string,
+  patch: MarketProductPatch,
+): MarketProduct[] {
+  return products.map(product => (product.id === productId ? { ...product, ...patch } : product));
+}
+
+export function applyVenueSettingsPatch(venue: Venue, patch: VenueMarketSettingsPatch): Venue {
+  return { ...venue, ...patch };
 }
 
 export function canEditMarketProducts({
