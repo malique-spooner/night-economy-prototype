@@ -12,6 +12,8 @@ components  reusable React UI, added only when a page genuinely needs it
 engine      pricing/business logic
 supabase    database/auth access
 data        seed fallback data
+styles      production-owned CSS migrated from the prototype
+assets      production-owned images/media
 ```
 
 Page rule:

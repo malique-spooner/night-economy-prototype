@@ -38,6 +38,8 @@ night-economy-prototype/
     engine/
     supabase/
     data/
+    styles/
+    assets/
 
   supabase/
     migrations/
@@ -79,6 +81,14 @@ Supabase browser client and data access helpers.
 `src/data/`
 
 Seed and fallback data used when Supabase is not configured.
+
+`src/styles/`
+
+Production-owned CSS. Styles can be migrated here from the prototype without changing the page layout.
+
+`src/assets/`
+
+Production-owned images and media used by React pages.
 
 `supabase/migrations/`
 
