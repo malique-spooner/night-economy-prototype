@@ -1,5 +1,5 @@
 import type { MarketProduct, Venue, VenueMarketSettings } from "../../engine/types";
-import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../supabase/market";
+import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../api/market";
 import { groupProductsByCategory } from "../tv/tvHelpers";
 import { PortalCategoryFilters } from "./PortalCategoryFilters";
 import { PortalDrinkGroup } from "./PortalDrinkGroup";

@@ -1,5 +1,5 @@
 import type { Venue } from "../../engine/types";
-import type { VenueMemberRole } from "../../supabase/memberships";
+import type { VenueMemberRole } from "../../api/memberships";
 
 type Props = {
   email: string;

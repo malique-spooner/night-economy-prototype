@@ -1,6 +1,6 @@
 import type { MarketProduct, Venue } from "../../engine/types";
-import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../supabase/market";
-import type { VenueMemberRole } from "../../supabase/memberships";
+import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../api/market";
+import type { VenueMemberRole } from "../../api/memberships";
 import { categoryLabel, groupProductsByCategory } from "../tv/tvHelpers";
 
 const quickAddDefaultPriceMinor = 1200;

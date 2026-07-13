@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prepareSiteLead } from "./leadForm";
+import { prepareSiteLead } from "../../../src/api/leadForm";
 
 describe("prepareSiteLead", () => {
   it("normalizes valid lead form input", () => {

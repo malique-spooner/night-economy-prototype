@@ -13,9 +13,9 @@ import {
   venueSettingsAccessMessage,
 } from "../components/portal/portalHelpers";
 import { useMarketState } from "../hooks/useMarketState";
-import { supabaseStatus } from "../supabase/client";
-import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../supabase/auth";
-import { getVenueMemberRole, type VenueMemberRole } from "../supabase/memberships";
+import { supabaseStatus } from "../api/client";
+import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../api/auth";
+import { getVenueMemberRole, type VenueMemberRole } from "../api/memberships";
 import {
   createMarketProduct,
   updateMarketProduct,
@@ -23,7 +23,7 @@ import {
   type MarketProductCreate,
   type MarketProductPatch,
   type VenueMarketSettingsPatch,
-} from "../supabase/market";
+} from "../api/market";
 import { PageSwitcher } from "./PageSwitcher";
 
 type Props = {

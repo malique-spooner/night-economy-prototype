@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarketProduct } from "../../engine/types";
+import type { MarketProduct } from "../../../../src/engine/types";
 import {
   applyMarketProductPatch,
   applyVenueSettingsPatch,
@@ -10,7 +10,7 @@ import {
   preparePortalCsvProducts,
   prepareQuickAddProduct,
   venueSettingsAccessMessage,
-} from "./portalHelpers";
+} from "../../../../src/components/portal/portalHelpers";
 
 const product: MarketProduct = {
   id: "mp_test",

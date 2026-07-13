@@ -1,5 +1,5 @@
 import type { MarketProduct } from "../../engine/types";
-import type { MarketProductPatch } from "../../supabase/market";
+import type { MarketProductPatch } from "../../api/market";
 import { portalCategoryLabel, portalCategoryOptions } from "./portalHelpers";
 import { PortalMoneyField } from "./PortalMoneyField";
 

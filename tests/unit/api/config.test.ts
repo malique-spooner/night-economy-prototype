@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSupabaseBrowserConfig } from "./config";
+import { createSupabaseBrowserConfig } from "../../../src/api/config";
 
 describe("createSupabaseBrowserConfig", () => {
   it("enables Supabase only when the public URL and publishable key are configured", () => {
@@ -16,7 +16,7 @@ describe("createSupabaseBrowserConfig", () => {
     });
   });
 
-  it("keeps the seed fallback active when the publishable key is still a placeholder", () => {
+  it("keeps the local demo fallback active when the publishable key is still a placeholder", () => {
     expect(
       createSupabaseBrowserConfig({
         VITE_SUPABASE_URL: "https://example.supabase.co",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveAppRoute } from "./routes";
+import { resolveAppRoute } from "../../src/routes";
 
 describe("resolveAppRoute", () => {
   it("keeps local view query params working on the React entrypoint", () => {

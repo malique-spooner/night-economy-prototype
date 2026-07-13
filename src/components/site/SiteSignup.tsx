@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { defaultSitePlanId, sitePlans } from "../../content/siteContent";
-import { prepareSiteLead } from "../../supabase/leadForm";
-import { createSiteLead, type SiteLeadPlan } from "../../supabase/leads";
+import { prepareSiteLead } from "../../api/leadForm";
+import { createSiteLead, type SiteLeadPlan } from "../../api/leads";
 
 const initialForm = {
   venueName: "",

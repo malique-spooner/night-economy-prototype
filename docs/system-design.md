@@ -63,8 +63,8 @@ The product state is built around:
 
 ## Detailed Docs
 
-- Engine v1: [docs/engine-v1.md](/Users/maliquespooner/Desktop/Coding/night-economy/docs/engine-v1.md)
-- Lightspeed K-Series: [docs/lightspeed-integration-schema.md](/Users/maliquespooner/Desktop/Coding/night-economy/docs/lightspeed-integration-schema.md)
+- Engine v1: [engine-v1.md](./engine-v1.md)
+- Lightspeed K-Series: [lightspeed-integration-schema.md](./lightspeed-integration-schema.md)
 
 ## Out of Scope for V1
 
@@ -73,4 +73,3 @@ The product state is built around:
 - availability sync
 - black-box model behavior
 - multiple POS providers at once
-

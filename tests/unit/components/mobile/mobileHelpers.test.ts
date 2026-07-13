@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mobileCategorySectionId, mobileTickerSymbol } from "./mobileHelpers";
+import { mobileCategorySectionId, mobileTickerSymbol } from "../../../../src/components/mobile/mobileHelpers";
 
 describe("mobileTickerSymbol", () => {
   it("uses the first two words as a compact drink mark", () => {

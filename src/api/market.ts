@@ -1,4 +1,4 @@
-import { seedProducts, seedVenue } from "../data/seed";
+import { seedProducts, seedVenue } from "../demo/marketSeed";
 import type { CrashIntervalMinutes, MarketProduct, Venue, VenueMarketSettings } from "../engine/types";
 import { defaultVenueMarketSettings, isCrashIntervalMinutes, normalizeTimeInput } from "../engine/venueSettings";
 import { supabase } from "./client";

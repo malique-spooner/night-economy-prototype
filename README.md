@@ -12,7 +12,6 @@ The visible app now runs through the React/Vite/TypeScript entrypoint at `index.
 - Supabase Edge Functions for market jobs
 - Vitest for pricing engine tests
 
-See [docs/folder-structure.md](docs/folder-structure.md) for the migration folder layout.
 See [docs/deployment.md](docs/deployment.md) for the ordered Supabase and Cloudflare deployment checklist.
 
 ## Run Locally

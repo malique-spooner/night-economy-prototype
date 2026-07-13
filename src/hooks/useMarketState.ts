@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { getMarketState, type MarketState } from "../supabase/market";
-import { supabase } from "../supabase/client";
+import { getMarketState, type MarketState } from "../api/market";
+import { supabase } from "../api/client";
 
 export function useMarketState(venueSlug: string) {
   const [state, setState] = useState<MarketState | null>(null);

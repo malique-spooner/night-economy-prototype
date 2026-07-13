@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarketProduct } from "../../engine/types";
+import type { MarketProduct } from "../../../../src/engine/types";
 import {
   categoryChangePercent,
   categoryClass,
@@ -13,7 +13,7 @@ import {
   movementLabel,
   mobilePriceStatusLabel,
   productTrend,
-} from "./tvHelpers";
+} from "../../../../src/components/tv/tvHelpers";
 
 const baseProduct: MarketProduct = {
   id: "product_base",

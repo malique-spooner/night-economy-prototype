@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultVenueMarketSettings, isCrashIntervalMinutes, normalizeTimeInput } from "./venueSettings";
+import { defaultVenueMarketSettings, isCrashIntervalMinutes, normalizeTimeInput } from "../../../src/engine/venueSettings";
 
 describe("defaultVenueMarketSettings", () => {
   it("creates input-ready defaults from a date", () => {

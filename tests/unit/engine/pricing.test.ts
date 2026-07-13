@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { priceProduct } from "./pricing";
-import type { MarketProduct } from "./types";
+import { priceProduct } from "../../../src/engine/pricing";
+import type { MarketProduct } from "../../../src/engine/types";
 
 const baseProduct: MarketProduct = {
   id: "mp_test",

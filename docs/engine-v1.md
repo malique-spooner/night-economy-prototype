@@ -65,7 +65,7 @@ Night Economy V1 is a rule-based sales engine:
 ## Verification
 
 ```bash
-npm run test -- src/engine/pricing.test.ts
+npm run test -- tests/unit/engine/pricing.test.ts
 npm run pricing:sync
 ```
 

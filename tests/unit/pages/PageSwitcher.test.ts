@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPageSwitcherLinks } from "./PageSwitcher";
+import { buildPageSwitcherLinks } from "../../../src/pages/PageSwitcher";
 
 describe("buildPageSwitcherLinks", () => {
   it("uses clean production routes for each surface", () => {

@@ -7,7 +7,7 @@ import {
   toVenueMarketSettingsRowPatch,
   type MarketProductRow,
   type VenueRow,
-} from "./market";
+} from "../../../src/api/market";
 
 const venueRow: VenueRow = {
   id: "venue_123",
@@ -98,7 +98,7 @@ describe("throwIfSupabaseQueryError", () => {
     expect(() => throwIfSupabaseQueryError(null, "Could not load venue")).not.toThrow();
   });
 
-  it("keeps Supabase query failures visible instead of silently falling back to seed data", () => {
+  it("keeps Supabase query failures visible instead of silently falling back to demo data", () => {
     expect(() =>
       throwIfSupabaseQueryError({ message: "permission denied for table market_products" }, "Could not load products"),
     ).toThrow("Could not load products: permission denied for table market_products");
