@@ -9,7 +9,7 @@ Night Economy is now a React/Vite/TypeScript app with Supabase-backed production
 ## Structure
 
 ```text
-night-economy-prototype/
+night-econemy/
   index.html
 
   src/

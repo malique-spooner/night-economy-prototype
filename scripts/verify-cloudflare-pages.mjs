@@ -4,8 +4,8 @@ const configPath = "wrangler.jsonc";
 const config = JSON.parse(readFileSync(configPath, "utf8"));
 const errors = [];
 
-if (config.name !== "night-economy-prototype") {
-  errors.push(`${configPath}: name must be night-economy-prototype.`);
+if (config.name !== "night-econemy") {
+  errors.push(`${configPath}: name must be night-econemy.`);
 }
 
 if (config.pages_build_output_dir !== "./dist") {

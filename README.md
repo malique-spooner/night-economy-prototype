@@ -63,7 +63,7 @@ Never expose `SUPABASE_SERVICE_ROLE_KEY` in the browser or Cloudflare Pages fron
 Cloudflare Pages config lives in `wrangler.jsonc`:
 
 ```text
-name: night-economy-prototype
+name: night-econemy
 pages_build_output_dir: ./dist
 ```
 
