@@ -6,10 +6,14 @@ const port = Number(process.env.SMOKE_PREVIEW_PORT ?? 4173);
 const baseUrl = `http://${host}:${port}`;
 const directRoutes = [
   "/",
-  "/react-preview.html?view=site",
-  "/react-preview.html?view=tv",
-  "/react-preview.html?view=mobile",
-  "/react-preview.html?view=portal",
+  "/?view=site",
+  "/?view=tv",
+  "/?view=mobile",
+  "/?view=portal",
+  "/tv/demo-venue",
+  "/menu/demo-venue",
+  "/app/demo-venue",
+  "/venue/demo-venue",
 ];
 
 await run("npm", ["run", "build"]);
@@ -103,22 +107,18 @@ async function assertCloudflareRedirects() {
   const redirects = await readFile("dist/_redirects", "utf8");
   const rules = parseRedirectRules(redirects);
   const expectedRules = [
-    { source: "/tv/*", target: "/react-preview.html", status: "200" },
-    { source: "/menu/*", target: "/react-preview.html", status: "200" },
-    { source: "/app/*", target: "/react-preview.html", status: "200" },
-    { source: "/venue/*", target: "/react-preview.html", status: "200" },
     { source: "/*", target: "/index.html", status: "200" },
   ];
 
   if (JSON.stringify(rules) !== JSON.stringify(expectedRules)) {
-    throw new Error("Cloudflare Pages redirects must keep React routes before the prototype catch-all.");
+    throw new Error("Cloudflare Pages redirects must send all app routes to the React entrypoint.");
   }
 
   const expectedRouteTargets = {
-    "/tv/demo-venue": "/react-preview.html",
-    "/menu/demo-venue": "/react-preview.html",
-    "/app/demo-venue": "/react-preview.html",
-    "/venue/demo-venue": "/react-preview.html",
+    "/tv/demo-venue": "/index.html",
+    "/menu/demo-venue": "/index.html",
+    "/app/demo-venue": "/index.html",
+    "/venue/demo-venue": "/index.html",
     "/not-a-real-route": "/index.html",
   };
 

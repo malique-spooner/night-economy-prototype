@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-Use this order when taking the prototype-shaped app toward a real deployment.
+Use this order when taking the React app toward a real deployment.
 
 For the detailed Supabase connection flow, see [supabase-handoff.md](./supabase-handoff.md).
 
@@ -107,7 +107,7 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-`public/_redirects` keeps `/` on the prototype while production routes such as `/tv/*`, `/menu/*`, `/app/*`, and `/venue/*` load the React app.
+`public/_redirects` sends all routes to `index.html`, the React app entrypoint.
 
 ## 5. Post-Deploy Smoke
 
@@ -115,10 +115,10 @@ Check:
 
 ```text
 /
-/react-preview.html?view=site
-/react-preview.html?view=tv
-/react-preview.html?view=mobile
-/react-preview.html?view=portal
+/?view=site
+/?view=tv
+/?view=mobile
+/?view=portal
 /tv/demo-venue
 /menu/demo-venue
 /app/demo-venue

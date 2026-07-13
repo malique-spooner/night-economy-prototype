@@ -1,8 +1,6 @@
 # Source Folder
 
-This folder contains the production TypeScript app that will gradually replace the prototype.
-
-Do not make `src/main.tsx` the main user-facing entrypoint until the migrated page matches the prototype. For now, `index.html` remains the visible app and `src/` is the production foundation.
+This folder contains the production React + TypeScript app. `index.html` mounts `src/main.tsx` as the main user-facing entrypoint.
 
 Minimal folders:
 
@@ -12,7 +10,7 @@ components  reusable React UI, added only when a page genuinely needs it
 engine      pricing/business logic
 supabase    database/auth access
 data        seed fallback data
-styles      production-owned CSS migrated from the prototype
+styles      production-owned CSS
 assets      production-owned images/media
 ```
 

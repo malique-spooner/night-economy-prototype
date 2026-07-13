@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { resolveAppRoute } from "./routes";
 
 describe("resolveAppRoute", () => {
-  it("keeps the prototype preview query params working", () => {
-    expect(resolveAppRoute("/react-preview.html", "?view=site")).toEqual({ surface: "site" });
-    expect(resolveAppRoute("/react-preview.html", "?view=tv")).toEqual({ surface: "tv", slug: "demo-venue" });
-    expect(resolveAppRoute("/react-preview.html", "?view=mobile")).toEqual({ surface: "menu", slug: "demo-venue" });
-    expect(resolveAppRoute("/react-preview.html", "?view=portal")).toEqual({ surface: "app", slug: "demo-venue" });
+  it("keeps local view query params working on the React entrypoint", () => {
+    expect(resolveAppRoute("/", "?view=site")).toEqual({ surface: "site" });
+    expect(resolveAppRoute("/", "?view=tv")).toEqual({ surface: "tv", slug: "demo-venue" });
+    expect(resolveAppRoute("/", "?view=mobile")).toEqual({ surface: "menu", slug: "demo-venue" });
+    expect(resolveAppRoute("/", "?view=portal")).toEqual({ surface: "app", slug: "demo-venue" });
   });
 
   it("supports production venue routes", () => {
@@ -19,6 +19,6 @@ describe("resolveAppRoute", () => {
   it("falls back to the public site", () => {
     expect(resolveAppRoute("/")).toEqual({ surface: "site" });
     expect(resolveAppRoute("/not-a-real-route")).toEqual({ surface: "site" });
-    expect(resolveAppRoute("/react-preview.html", "?view=unknown")).toEqual({ surface: "site" });
+    expect(resolveAppRoute("/", "?view=unknown")).toEqual({ surface: "site" });
   });
 });

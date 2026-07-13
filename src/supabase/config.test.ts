@@ -16,7 +16,7 @@ describe("createSupabaseBrowserConfig", () => {
     });
   });
 
-  it("keeps the prototype fallback active when the publishable key is still a placeholder", () => {
+  it("keeps the seed fallback active when the publishable key is still a placeholder", () => {
     expect(
       createSupabaseBrowserConfig({
         VITE_SUPABASE_URL: "https://example.supabase.co",

@@ -1,36 +1,16 @@
 # Folder Structure
 
-Night Economy is migrating from a static prototype to a production-shaped app without losing the prototype UI.
+Night Economy is now a React/Vite/TypeScript app with Supabase-backed production foundations.
 
 ## Current Rule
 
-`index.html` is still the main visible app. It loads the prototype runtime from `legacy/prototype/`:
-
-```text
-legacy/prototype/styles.css
-legacy/prototype/data.js
-legacy/prototype/shared.js
-legacy/prototype/pages.js
-legacy/prototype/home.js
-legacy/prototype/crash.js
-```
-
-The production folders below are introduced behind the scenes. A page should only replace the prototype version when it visually matches and has the required data/auth behavior.
+`index.html` is the Vite entrypoint and mounts `src/main.tsx`. Prototype runtime files are no longer part of the app.
 
 ## Structure
 
 ```text
 night-economy-prototype/
   index.html
-
-  legacy/
-    prototype/
-      styles.css
-      data.js
-      shared.js
-      pages.js
-      home.js
-      crash.js
 
   src/
     pages/
@@ -57,7 +37,7 @@ night-economy-prototype/
 
 `src/pages/`
 
-Future React versions of full screens:
+React versions of full screens:
 
 ```text
 Site.tsx
@@ -84,7 +64,7 @@ Seed and fallback data used when Supabase is not configured.
 
 `src/styles/`
 
-Production-owned CSS. Styles can be migrated here from the prototype without changing the page layout.
+Production-owned CSS for the React app.
 
 `src/assets/`
 
@@ -108,13 +88,12 @@ Do not put documentation in `public/`, because Vite copies that folder into prod
 
 Large vendor/API reference files that are useful for implementation but should not sit at the repo root.
 
-## Migration Order
+## Route Shape
 
-1. Keep `/` as the prototype.
-2. Move reusable business logic into `src/engine/`.
-3. Connect the prototype data shape to Supabase behind the scenes.
-4. Rebuild one page in React.
-5. Compare it against the prototype.
-6. Swap traffic only when it matches.
-
-Recommended first page: `Portal`, because it needs the production data model most and is less visually risky than the TV board.
+```text
+/              public site
+/venue/:slug   public site for a venue
+/tv/:slug      venue TV display
+/menu/:slug    guest menu
+/app/:slug     operator portal
+```

@@ -2,9 +2,7 @@
 
 Production-shaped migration repo for the Night Economy pilot.
 
-The current visible app is still the original static prototype at `index.html`. Its runtime files live in
-`legacy/prototype/`. The React/Vite/Supabase files under `src/` and `supabase/` are the behind-the-scenes production
-foundation and should be wired in one page at a time.
+The visible app now runs through the React/Vite/TypeScript entrypoint at `index.html`. The old static prototype runtime has been removed.
 
 ## Stack
 
@@ -26,7 +24,7 @@ npm run dev
 
 Use Node.js 22 or newer. `.nvmrc` is set to `22` for local shells that use `nvm`.
 
-Open the current prototype:
+Open the app:
 
 ```text
 http://127.0.0.1:5173/
@@ -34,9 +32,12 @@ http://127.0.0.1:5173/?view=tv
 http://127.0.0.1:5173/?view=mobile
 http://127.0.0.1:5173/?view=site
 http://127.0.0.1:5173/?view=portal
+http://127.0.0.1:5173/tv/demo-venue
+http://127.0.0.1:5173/menu/demo-venue
+http://127.0.0.1:5173/app/demo-venue
 ```
 
-Migration rule: keep the prototype looking correct on `/` while production code is introduced behind the scenes.
+`?view=` routes are local shortcuts. Production-shaped venue routes use `/venue/:slug`, `/tv/:slug`, `/menu/:slug`, and `/app/:slug`.
 
 ## Environment
 
@@ -85,9 +86,9 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Local prototype builds can still use `npm run build`. Production deploys should use `npm run build:production` so missing Supabase config fails before Cloudflare publishes the site.
+Local builds can use `npm run build`. Production deploys should use `npm run build:production` so missing Supabase config fails before Cloudflare publishes the site.
 
-`public/_redirects` keeps `/` on the current prototype while serving React routes for `/tv/*`, `/menu/*`, `/app/*`, and `/venue/*`.
+`public/_redirects` sends all app routes to `index.html`, the React entrypoint.
 
 Local `npm run check` verifies the Cloudflare config with `npm run cloudflare:config`.
 
@@ -99,5 +100,5 @@ Run this before pushing a deploy branch:
 npm run smoke:preview
 ```
 
-It builds the app, starts Vite's production preview server, and checks the current prototype plus the four React migration views.
-It also validates the Cloudflare Pages redirect order so production venue routes hit the React app before the prototype catch-all.
+It builds the app, starts Vite's production preview server, and checks the React root, local view shortcuts, and production venue routes.
+It also validates the Cloudflare Pages redirect rule so production venue routes hit the React app.
