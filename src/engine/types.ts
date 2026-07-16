@@ -20,6 +20,7 @@ export type VenueMarketSettings = Pick<
 
 export type MarketProduct = {
   id: string;
+  posProductId?: string;
   symbol: string;
   name: string;
   category: string;

@@ -41,7 +41,7 @@ The product state is built around:
 
 - `venues`
 - `pos_connections`
-- `pos_external_products`
+- `pos_products`
 - `market_products`
 - `market_product_assets`
 - `market_price_rules`
@@ -65,6 +65,7 @@ The product state is built around:
 
 - Engine v1: [engine-v1.md](./engine-v1.md)
 - Lightspeed K-Series: [lightspeed-integration-schema.md](./lightspeed-integration-schema.md)
+- POS contract: [pos-integration-contract.md](./pos-integration-contract.md)
 
 ## Out of Scope for V1
 

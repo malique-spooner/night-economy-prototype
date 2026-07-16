@@ -13,6 +13,8 @@ The visible app now runs through the React/Vite/TypeScript entrypoint at `index.
 - Vitest for pricing engine tests
 
 See [docs/deployment.md](docs/deployment.md) for the ordered Supabase and Cloudflare deployment checklist.
+See [docs/pos-integration-contract.md](docs/pos-integration-contract.md) for the boundary between a POS and Night Economy.
+See [docs/friday-service-acceptance.md](docs/friday-service-acceptance.md) for the accelerated local POS acceptance run.
 
 ## Run Locally
 
@@ -20,6 +22,22 @@ See [docs/deployment.md](docs/deployment.md) for the ordered Supabase and Cloudf
 npm install
 npm run dev
 ```
+
+Run the local POS Simulator in a second terminal:
+
+```bash
+npm run simulator:dev
+```
+
+It provides the Friday-night service GUI and POS API at `http://127.0.0.1:3002`.
+
+When real Supabase credentials and the `008` migration are applied, run the local market runner in a third terminal:
+
+```bash
+npm run simulator:market
+```
+
+It polls the simulator every 3.75 seconds (two simulated service minutes at 32x), imports sales, calculates market prices, and publishes changed prices back to the simulator.
 
 Use Node.js 22 or newer. `.nvmrc` is set to `22` for local shells that use `nvm`.
 

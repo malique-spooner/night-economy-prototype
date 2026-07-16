@@ -88,6 +88,10 @@ describe("mapMarketProductRow", () => {
     });
   });
 
+  it("keeps the internal POS mapping alongside the market-facing product", () => {
+    expect(mapMarketProductRow({ ...productRow, pos_product_id: "pos_mp_cem" }).posProductId).toBe("pos_mp_cem");
+  });
+
   it("defaults missing sales velocity for older rows", () => {
     expect(mapMarketProductRow({ ...productRow, sales_velocity: null }).salesVelocity).toBe(4);
   });
@@ -115,8 +119,9 @@ describe("toMarketProductRowPatch", () => {
   });
 
   it("maps product patches to database columns and adds updated_at only for real changes", () => {
-    expect(toMarketProductRowPatch({ name: "House Lager", isLive: false })).toMatchObject({
+    expect(toMarketProductRowPatch({ name: "House Lager", symbol: "LGR", isLive: false })).toMatchObject({
       display_name: "House Lager",
+      market_symbol: "LGR",
       is_live: false,
       updated_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
     });

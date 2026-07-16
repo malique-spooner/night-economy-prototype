@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Friday Service Simulator</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">Night Economy development tool</p>
+        <h1>Friday Service Simulator</h1>
+        <p class="subtitle">A deterministic POS that runs 18:00–02:00 in fifteen minutes at 32× speed.</p>
+      </header>
+      <section class="status-grid" id="status"></section>
+      <section class="controls panel">
+        <div class="control-group">
+          <button data-action="start">Start service</button>
+          <button data-action="pause" class="quiet">Pause</button>
+          <button data-action="reset" class="quiet">Reset</button>
+          <button data-action="advance" class="quiet">+1 min</button>
+        </div>
+        <label>Speed <select id="speed"><option value="1">1×</option><option value="10">10×</option><option value="32" selected>32×</option><option value="60">60×</option></select></label>
+        <label>Service level <select id="crowd"><option value="quiet">Quiet</option><option value="normal" selected>Normal</option><option value="busy">Busy</option></select></label>
+        <div class="control-group">
+          <button data-event="rush">Trigger rush</button>
+          <button data-event="slowdown" class="quiet">Trigger slowdown</button>
+        </div>
+      </section>
+      <section class="layout">
+        <section class="panel"><h2>Current POS catalogue</h2><div id="products"></div></section>
+        <section class="panel"><h2>Live sales feed</h2><div id="sales"></div></section>
+      </section>
+      <section class="panel"><h2>Price publications received</h2><div id="publications"></div></section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

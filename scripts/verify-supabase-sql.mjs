@@ -10,6 +10,8 @@ const expectedMigrations = [
   "005_market_sales_velocity.sql",
   "006_venue_market_settings.sql",
   "007_market_product_inserts.sql",
+  "008_pos_catalog_and_publications.sql",
+  "009_pos_owned_catalogue_portal_rules.sql",
 ];
 
 const migrationFiles = readdirSync(migrationsDir)
@@ -103,6 +105,31 @@ function checkRequiredPatterns() {
       label: "venue market settings update grant excludes anon",
       source: migrationSql["006_venue_market_settings.sql"],
       pattern: /grant update \([\s\S]+market_live[\s\S]+crash_interval_minutes[\s\S]+launch_date[\s\S]+launch_start_time[\s\S]+launch_end_time[\s\S]+updated_at[\s\S]+\) on public\.venues to authenticated/i,
+    },
+    {
+      label: "POS catalogue ownership tables",
+      source: migrationSql["008_pos_catalog_and_publications.sql"],
+      pattern: /create table if not exists public\.pos_connections[\s\S]+create table if not exists public\.pos_products[\s\S]+add column if not exists pos_product_id/i,
+    },
+    {
+      label: "POS sales and publication audit tables",
+      source: migrationSql["008_pos_catalog_and_publications.sql"],
+      pattern: /create table if not exists public\.pos_sales_events[\s\S]+create table if not exists public\.price_publications[\s\S]+create table if not exists public\.price_publication_lines/i,
+    },
+    {
+      label: "POS products are read-only for browser clients",
+      source: migrationSql["008_pos_catalog_and_publications.sql"],
+      pattern: /grant select on public\.pos_connections, public\.pos_products to authenticated/i,
+    },
+    {
+      label: "market product configuration requires a mapped POS product",
+      source: migrationSql["009_pos_owned_catalogue_portal_rules.sql"],
+      pattern: /create policy "venue members can configure POS products for the market"[\s\S]+pos_product_id is not null[\s\S]+from public\.pos_products pp[\s\S]+pp\.venue_id = market_products\.venue_id/i,
+    },
+    {
+      label: "browser cannot directly change POS-owned prices or availability",
+      source: migrationSql["009_pos_owned_catalogue_portal_rules.sql"],
+      pattern: /revoke update \([\s\S]+base_price_minor[\s\S]+current_price_minor[\s\S]+is_sold_out[\s\S]+\) on public\.market_products from authenticated/i,
     },
   ];
 

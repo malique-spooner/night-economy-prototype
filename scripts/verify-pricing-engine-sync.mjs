@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 const frontendSource = readFileSync("src/engine/pricing.ts", "utf8");
 const edgeFunctionSource = readFileSync("supabase/functions/market-cycle/index.ts", "utf8");
+const simulatorRunnerSource = readFileSync("pos-simulator/src/marketPricing.mjs", "utf8");
 
 const sharedSnippets = [
   {
@@ -46,6 +47,7 @@ const failures = sharedSnippets.flatMap(({ label, pattern }) => {
   const missing = [];
   if (!pattern.test(frontendSource)) missing.push(`src/engine/pricing.ts missing ${label}.`);
   if (!pattern.test(edgeFunctionSource)) missing.push(`supabase/functions/market-cycle/index.ts missing ${label}.`);
+  if (!pattern.test(simulatorRunnerSource)) missing.push(`pos-simulator/src/marketPricing.mjs missing ${label}.`);
   return missing;
 });
 

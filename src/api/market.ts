@@ -13,20 +13,29 @@ export type MarketProductPatch = Partial<
   Pick<
     MarketProduct,
     | "name"
+    | "symbol"
     | "category"
-    | "basePriceMinor"
-    | "currentPriceMinor"
     | "floorPriceMinor"
     | "ceilingPriceMinor"
     | "isLive"
-    | "isSoldOut"
     | "priority"
   >
 >;
 
 export type VenueMarketSettingsPatch = Partial<VenueMarketSettings>;
 
-export type MarketProductCreate = MarketProduct;
+export type MarketProductConfiguration = MarketProduct;
+
+export type PosProduct = {
+  id: string;
+  externalId: string;
+  sku: string;
+  name: string;
+  basePriceMinor: number;
+  currentPriceMinor: number;
+  currency: string;
+  isAvailable: boolean;
+};
 
 export type VenueRow = {
   id: string;
@@ -43,6 +52,7 @@ export type VenueRow = {
 
 export type MarketProductRow = {
   id: string;
+  pos_product_id?: string | null;
   market_symbol: string;
   display_name: string;
   category: string;
@@ -54,6 +64,17 @@ export type MarketProductRow = {
   is_live: boolean;
   is_sold_out: boolean;
   priority: boolean;
+};
+
+type PosProductRow = {
+  id: string;
+  external_id: string;
+  sku: string;
+  source_name: string;
+  base_price_minor: number;
+  current_price_minor: number;
+  currency: string;
+  is_available: boolean;
 };
 
 type SupabaseQueryError = {
@@ -83,6 +104,7 @@ export function mapVenueRow(row: VenueRow): Venue {
 export function mapMarketProductRow(row: MarketProductRow): MarketProduct {
   return {
     id: row.id,
+    ...(row.pos_product_id ? { posProductId: row.pos_product_id } : {}),
     symbol: row.market_symbol,
     name: row.display_name,
     category: row.category,
@@ -97,6 +119,19 @@ export function mapMarketProductRow(row: MarketProductRow): MarketProduct {
   };
 }
 
+export function mapPosProductRow(row: PosProductRow): PosProduct {
+  return {
+    id: row.id,
+    externalId: row.external_id,
+    sku: row.sku,
+    name: row.source_name,
+    basePriceMinor: row.base_price_minor,
+    currentPriceMinor: row.current_price_minor,
+    currency: row.currency,
+    isAvailable: row.is_available,
+  };
+}
+
 export function throwIfSupabaseQueryError(error: SupabaseQueryError | null | undefined, fallbackMessage: string) {
   if (!error) return;
 
@@ -104,12 +139,12 @@ export function throwIfSupabaseQueryError(error: SupabaseQueryError | null | und
 }
 
 export async function getMarketState(venueSlug: string): Promise<MarketState> {
-  if (!supabase) return { venue: seedVenue, products: seedProducts, source: "seed" };
+  if (!supabase) return { venue: seedVenue, products: demoMarketProducts(), source: "seed" };
 
   const { data: venue, error: venueError } = await supabase.from("venues").select("*").eq("slug", venueSlug).maybeSingle();
   throwIfSupabaseQueryError(venueError, "Could not load venue");
 
-  if (!venue) return { venue: seedVenue, products: seedProducts, source: "seed" };
+  if (!venue) return { venue: seedVenue, products: demoMarketProducts(), source: "seed" };
 
   const { data: products, error: productsError } = await supabase
     .from("market_products")
@@ -125,6 +160,18 @@ export async function getMarketState(venueSlug: string): Promise<MarketState> {
   };
 }
 
+export async function getPosProducts(venueId: string): Promise<PosProduct[]> {
+  if (!supabase) return demoPosProducts();
+
+  const { data, error } = await supabase
+    .from("pos_products")
+    .select("*")
+    .eq("venue_id", venueId)
+    .order("source_name");
+  throwIfSupabaseQueryError(error, "Could not load POS products");
+  return (data ?? []).map(mapPosProductRow);
+}
+
 export async function updateMarketProduct(productId: string, patch: MarketProductPatch) {
   if (!supabase) return { persisted: false as const };
 
@@ -137,7 +184,7 @@ export async function updateMarketProduct(productId: string, patch: MarketProduc
   return { persisted: true as const };
 }
 
-export async function createMarketProduct(venueId: string, product: MarketProductCreate) {
+export async function createMarketProductConfiguration(venueId: string, product: MarketProductConfiguration) {
   if (!supabase) return { persisted: false as const, product };
 
   const { data, error } = await supabase
@@ -165,23 +212,22 @@ export async function updateVenueMarketSettings(venueId: string, patch: VenueMar
 export function toMarketProductRowPatch(patch: MarketProductPatch) {
   const rowPatch = {
     ...(patch.name !== undefined ? { display_name: patch.name } : {}),
+    ...(patch.symbol !== undefined ? { market_symbol: patch.symbol } : {}),
     ...(patch.category !== undefined ? { category: patch.category } : {}),
-    ...(patch.basePriceMinor !== undefined ? { base_price_minor: patch.basePriceMinor } : {}),
-    ...(patch.currentPriceMinor !== undefined ? { current_price_minor: patch.currentPriceMinor } : {}),
     ...(patch.floorPriceMinor !== undefined ? { floor_price_minor: patch.floorPriceMinor } : {}),
     ...(patch.ceilingPriceMinor !== undefined ? { ceiling_price_minor: patch.ceilingPriceMinor } : {}),
     ...(patch.isLive !== undefined ? { is_live: patch.isLive } : {}),
-    ...(patch.isSoldOut !== undefined ? { is_sold_out: patch.isSoldOut } : {}),
     ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
   };
 
   return withUpdatedAt(rowPatch);
 }
 
-function toMarketProductInsertRow(venueId: string, product: MarketProductCreate) {
+function toMarketProductInsertRow(venueId: string, product: MarketProductConfiguration) {
   return {
     id: product.id,
     venue_id: venueId,
+    ...(product.posProductId ? { pos_product_id: product.posProductId } : {}),
     market_symbol: product.symbol,
     display_name: product.name,
     category: product.category,
@@ -194,6 +240,23 @@ function toMarketProductInsertRow(venueId: string, product: MarketProductCreate)
     is_sold_out: product.isSoldOut,
     priority: product.priority,
   };
+}
+
+function demoPosProducts(): PosProduct[] {
+  return seedProducts.map(product => ({
+    id: `pos_${product.id}`,
+    externalId: `pos_${product.symbol.toLowerCase()}`,
+    sku: product.symbol,
+    name: product.name,
+    basePriceMinor: product.basePriceMinor,
+    currentPriceMinor: product.currentPriceMinor,
+    currency: seedVenue.currency,
+    isAvailable: !product.isSoldOut,
+  }));
+}
+
+function demoMarketProducts(): MarketProduct[] {
+  return seedProducts.map(product => ({ ...product, posProductId: `pos_${product.id}` }));
 }
 
 export function toVenueMarketSettingsRowPatch(patch: VenueMarketSettingsPatch) {

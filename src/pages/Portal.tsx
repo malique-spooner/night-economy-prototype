@@ -17,13 +17,16 @@ import { supabaseStatus } from "../api/client";
 import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "../api/auth";
 import { getVenueMemberRole, type VenueMemberRole } from "../api/memberships";
 import {
-  createMarketProduct,
+  createMarketProductConfiguration,
+  getPosProducts,
   updateMarketProduct,
   updateVenueMarketSettings,
-  type MarketProductCreate,
+  type MarketProductConfiguration,
   type MarketProductPatch,
+  type PosProduct,
   type VenueMarketSettingsPatch,
 } from "../api/market";
+import { prepareMarketProductConfiguration } from "../components/portal/portalHelpers";
 import { PageSwitcher } from "./PageSwitcher";
 
 type Props = {
@@ -41,6 +44,7 @@ export function Portal({ venueSlug }: Props) {
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
   const [activeTab, setActiveTab] = useState<PortalTab>("start");
   const [signedInEmail, setSignedInEmail] = useState("");
+  const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
 
   useEffect(() => {
     void refreshSession();
@@ -87,6 +91,26 @@ export function Portal({ venueSlug }: Props) {
     return () => {
       cancelled = true;
     };
+  }, [isSignedIn, state?.source, state?.venue.id]);
+
+  useEffect(() => {
+    if (!state) return;
+    const marketState = state;
+    let cancelled = false;
+    async function refreshPosProducts() {
+      if (marketState.source === "supabase" && !isSignedIn) {
+        setPosProducts([]);
+        return;
+      }
+      try {
+        const nextProducts = await getPosProducts(marketState.venue.id);
+        if (!cancelled) setPosProducts(nextProducts);
+      } catch (error) {
+        if (!cancelled) setLastSavedMessage(error instanceof Error ? `Could not load POS products: ${error.message}` : "Could not load POS products");
+      }
+    }
+    void refreshPosProducts();
+    return () => { cancelled = true; };
   }, [isSignedIn, state?.source, state?.venue.id]);
 
   if (error) return <main className="page">Could not load portal: {error}</main>;
@@ -144,7 +168,7 @@ export function Portal({ venueSlug }: Props) {
     }
   }
 
-  async function handleProductAdd(product: MarketProductCreate) {
+  async function handleConfigurePosProduct(posProduct: PosProduct) {
     if (!state) return false;
 
     if (!canPersist) {
@@ -153,12 +177,17 @@ export function Portal({ venueSlug }: Props) {
     }
 
     try {
-      const result = await createMarketProduct(state.venue.id, product);
+      const product: MarketProductConfiguration = prepareMarketProductConfiguration({
+        id: `mp_${crypto.randomUUID()}`,
+        posProduct,
+        products: state.products,
+      });
+      const result = await createMarketProductConfiguration(state.venue.id, product);
       setState({ ...state, products: [...state.products, result.product] });
-      setLastSavedMessage(result.persisted ? "Product added to Supabase" : "Demo product added");
+      setLastSavedMessage(result.persisted ? "POS product configured for the market" : "Demo product configured for the market");
       return true;
     } catch (error) {
-      setLastSavedMessage(error instanceof Error ? `Not added: ${error.message}` : "Not added");
+      setLastSavedMessage(error instanceof Error ? `Not configured: ${error.message}` : "Not configured");
       return false;
     }
   }
@@ -246,10 +275,11 @@ export function Portal({ venueSlug }: Props) {
                 {activeTab === "start" ? (
                   <PortalStartPage
                     lastSavedMessage={lastSavedMessage}
-                    onProductAdd={handleProductAdd}
+                    onConfigurePosProduct={handleConfigurePosProduct}
                     onProductChange={handleProductChange}
                     onVenueSettingsChange={handleVenueSettingsChange}
                     products={state.products}
+                    posProducts={posProducts}
                     source={state.source}
                     venue={state.venue}
                   />

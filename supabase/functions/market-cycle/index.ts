@@ -1,11 +1,17 @@
 type MarketProduct = {
   id: string;
+  pos_product_id: string | null;
   current_price_minor: number;
   floor_price_minor: number;
   ceiling_price_minor: number;
   sales_velocity: number;
   is_live: boolean;
   is_sold_out: boolean;
+};
+
+type PosSaleEvent = {
+  pos_product_id: string;
+  quantity: number;
 };
 
 type Venue = {
@@ -80,7 +86,22 @@ async function handleRequest(request: Request) {
     { headers },
     "load market products",
   );
-  const decisions = products.map(priceProduct);
+  const cycleEnd = new Date();
+  const cycleStart = new Date(cycleEnd.getTime() - 2 * 60_000);
+  const sales = await restJson<PosSaleEvent[]>(
+    `${supabaseUrl}/rest/v1/pos_sales_events?venue_id=eq.${encodeURIComponent(venue.id)}&occurred_at=gte.${encodeURIComponent(cycleStart.toISOString())}&occurred_at=lte.${encodeURIComponent(cycleEnd.toISOString())}&select=pos_product_id,quantity`,
+    { headers },
+    "load recent POS sales",
+  );
+  const velocityByPosProduct = sales.reduce((velocities, sale) => {
+    velocities.set(sale.pos_product_id, (velocities.get(sale.pos_product_id) ?? 0) + sale.quantity);
+    return velocities;
+  }, new Map<string, number>());
+  const pricedProducts = products.map(product => ({
+    ...product,
+    sales_velocity: product.pos_product_id ? velocityByPosProduct.get(product.pos_product_id) ?? 0 : 0,
+  }));
+  const decisions = pricedProducts.map(priceProduct);
   const updatedAt = new Date().toISOString();
 
   await Promise.all(
@@ -88,7 +109,7 @@ async function handleRequest(request: Request) {
       restRequest(`${supabaseUrl}/rest/v1/market_products?id=eq.${encodeURIComponent(decision.productId)}`, {
         method: "PATCH",
         headers,
-        body: JSON.stringify({ current_price_minor: decision.newPriceMinor, updated_at: updatedAt }),
+        body: JSON.stringify({ current_price_minor: decision.newPriceMinor, sales_velocity: pricedProducts.find(product => product.id === decision.productId)?.sales_velocity ?? 0, updated_at: updatedAt }),
       }, `update product ${decision.productId}`),
     ),
   );
@@ -97,6 +118,7 @@ async function handleRequest(request: Request) {
     venueId: venue.id,
     venueSlug,
     reason,
+    salesWindow: { start: cycleStart.toISOString(), end: cycleEnd.toISOString(), importedLines: sales.length },
     decisions,
   };
 

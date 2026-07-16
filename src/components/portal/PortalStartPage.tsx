@@ -1,28 +1,30 @@
 import type { MarketProduct, Venue, VenueMarketSettings } from "../../engine/types";
-import type { MarketProductPatch, VenueMarketSettingsPatch } from "../../api/market";
+import type { MarketProductPatch, PosProduct, VenueMarketSettingsPatch } from "../../api/market";
 import { groupProductsByCategory } from "../tv/tvHelpers";
 import { PortalCategoryFilters } from "./PortalCategoryFilters";
 import { PortalDrinkGroup } from "./PortalDrinkGroup";
 import { PortalLaunchStrip } from "./PortalLaunchStrip";
-import { PortalQuickAdd } from "./PortalQuickAdd";
+import { PortalPosProductSetup } from "./PortalPosProductSetup";
 import { portalCategories } from "./portalHelpers";
 
 type Props = {
   lastSavedMessage: string;
   onProductChange: (productId: string, patch: MarketProductPatch, options?: { persist?: boolean }) => void;
-  onProductAdd: (product: MarketProduct) => boolean | Promise<boolean>;
+  onConfigurePosProduct: (posProduct: PosProduct) => void;
   onVenueSettingsChange: (patch: VenueMarketSettingsPatch) => void;
   products: MarketProduct[];
+  posProducts: PosProduct[];
   source: "seed" | "supabase";
   venue: Venue;
 };
 
 export function PortalStartPage({
   lastSavedMessage,
-  onProductAdd,
+  onConfigurePosProduct,
   onProductChange,
   onVenueSettingsChange,
   products,
+  posProducts,
   source,
   venue,
 }: Props) {
@@ -53,12 +55,13 @@ export function PortalStartPage({
             allProducts={products}
             category={category}
             onProductChange={onProductChange}
+            posProducts={posProducts}
             products={categoryProducts}
             key={category}
           />
         ))}
       </div>
-      <PortalQuickAdd categories={categories} onProductAdd={onProductAdd} products={products} />
+      <PortalPosProductSetup onConfigure={onConfigurePosProduct} posProducts={posProducts} products={products} />
     </section>
   );
 }
