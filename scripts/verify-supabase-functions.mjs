@@ -7,8 +7,16 @@ const checks = [
     pattern: /x-night-economy-scheduler-secret/,
   },
   {
-    label: "reads service-role key only inside Edge Function",
-    pattern: /Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)/,
+    label: "reads a modern server key only inside Edge Function",
+    pattern: /SUPABASE_SECRET_KEYS[\s\S]+SUPABASE_SERVICE_ROLE_KEY/,
+  },
+  {
+    label: "uses modern key authentication without a Bearer secret",
+    pattern: /apikey: serviceRoleKey/,
+  },
+  {
+    label: "requires scheduler secret configuration",
+    pattern: /SCHEDULER_SECRET is not configured/,
   },
   {
     label: "wraps handler errors as JSON",

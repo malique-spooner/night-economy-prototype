@@ -49,16 +49,16 @@ async function handleRequest(request: Request) {
 
   const schedulerSecret = Deno.env.get("SCHEDULER_SECRET");
   const requestSecret = request.headers.get("x-night-economy-scheduler-secret");
-  if (schedulerSecret && requestSecret !== schedulerSecret) return json({ error: "Unauthorized" }, 401);
+  if (!schedulerSecret) return json({ error: "SCHEDULER_SECRET is not configured" }, 500);
+  if (requestSecret !== schedulerSecret) return json({ error: "Unauthorized" }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceRoleKey = getServerKey();
   if (!supabaseUrl || !serviceRoleKey) return json({ error: "Supabase function secrets are missing" }, 500);
 
   const { venueSlug = "demo-venue", reason = "manual_cycle" } = await request.json().catch(() => ({}));
   const headers = {
     apikey: serviceRoleKey,
-    authorization: `Bearer ${serviceRoleKey}`,
     "content-type": "application/json",
   };
 
@@ -189,6 +189,20 @@ function getReason(product: MarketProduct, movement: PriceDecision["movement"]) 
   if (product.current_price_minor === product.floor_price_minor) return "Price held at the product floor.";
   if (product.current_price_minor === product.ceiling_price_minor) return "Price held at the product ceiling.";
   return "Sales velocity was steady, so the price held.";
+}
+
+function getServerKey() {
+  const modernKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (modernKeys) {
+    try {
+      const keys = JSON.parse(modernKeys) as Record<string, string>;
+      return keys.default ?? Object.values(keys)[0];
+    } catch {
+      return undefined;
+    }
+  }
+
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 }
 
 function json(body: unknown, status = 200) {

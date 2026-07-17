@@ -16,7 +16,11 @@ export async function startMarketRunner({
     throw new Error("Set SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY before running the local market runner.");
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+    // Modern sb_secret keys are accepted in `apikey`, not as Bearer tokens.
+    global: { fetch: fetchWithSecretKey },
+  });
   let running = false;
   async function cycle() {
     if (running) return;
@@ -305,4 +309,10 @@ function readEnvFile(path) {
 
 function isPlaceholder(value) {
   return ["", "your_service_role_key_here", "..."].includes(value ?? "");
+}
+
+export function fetchWithSecretKey(input, init = {}, fetchImpl = fetch) {
+  const headers = new Headers(init.headers);
+  headers.delete("authorization");
+  return fetchImpl(input, { ...init, headers });
 }
