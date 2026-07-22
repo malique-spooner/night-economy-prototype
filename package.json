@@ -11,6 +11,8 @@
     "simulator:dev": "node pos-simulator/server.mjs",
     "simulator:market": "node pos-simulator/market-runner.mjs",
     "simulator:verify": "vitest run tests/integration",
+    "simulator:reset": "node scripts/reset-demo-service.mjs",
+    "simulator:verify-live": "node scripts/verify-live-pos-flow.mjs",
     "setup:env": "node scripts/create-local-env.mjs",
     "launch:readiness": "node scripts/check-launch-readiness.mjs",
     "build": "tsc -b && vite build",

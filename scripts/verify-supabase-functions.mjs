@@ -31,12 +31,12 @@ const checks = [
     pattern: /market_price_snapshots/,
   },
   {
-    label: "uses sales velocity pricing input",
-    pattern: /sales_velocity/,
+    label: "uses the range-aware market setting",
+    pattern: /MARKET_INTENSITY = 1\.25[\s\S]+activityFactor[\s\S]+allowedRange/,
   },
   {
-    label: "derives sales velocity from imported POS sale events",
-    pattern: /pos_sales_events[\s\S]+velocityByPosProduct[\s\S]+sales_velocity/,
+    label: "uses a fifteen-minute POS sales round",
+    pattern: /cycleEnd\.getTime\(\) - 15 \* 60_000/,
   },
   {
     label: "respects venue market live state",

@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { runMarketCycle, startMarketRunner } from "../../pos-simulator/market-runner.mjs";
-import { priceMarketProduct, salesVelocityByPosProduct } from "../../pos-simulator/src/marketPricing.mjs";
+import { priceMarket } from "../../pos-simulator/src/marketPricing.mjs";
 
 describe("local market runner", () => {
   it("requires a server-only Supabase credential", async () => {
     await expect(startMarketRunner({ env: {} })).rejects.toThrow("SUPABASE_SERVICE_ROLE_KEY");
   });
 
-  it("converts imported POS sales into the pricing engine velocity input", () => {
-    expect(salesVelocityByPosProduct([{ pos_product_id: "pos_cem", quantity: 2 }, { pos_product_id: "pos_cem", quantity: 3 }, { pos_product_id: "pos_cmar", quantity: 1 }])).toEqual(new Map([["pos_cem", 5], ["pos_cmar", 1]]));
-  });
-
-  it("uses the same floor and ceiling-safe price movement as Night Economy", () => {
-    expect(priceMarketProduct({ id: "mp_test", currentPriceMinor: 1500, floorPriceMinor: 700, ceilingPriceMinor: 1500, salesVelocity: 9, isLive: true, isSoldOut: false })).toMatchObject({ movement: "hold", newPriceMinor: 1500, reason: "Price held at the product ceiling." });
+  it("uses a zero-sum point ledger within each category", () => {
+    const products = [{ id: "espresso", posProductId: "pos_espresso", category: "Cocktails", currentPriceMinor: 1000, floorPriceMinor: 700, ceilingPriceMinor: 1500, isLive: true, isSoldOut: false }, { id: "margarita", posProductId: "pos_margarita", category: "Cocktails", currentPriceMinor: 1000, floorPriceMinor: 700, ceilingPriceMinor: 1500, isLive: true, isSoldOut: false }, { id: "negroni", posProductId: "pos_negroni", category: "Cocktails", currentPriceMinor: 1000, floorPriceMinor: 700, ceilingPriceMinor: 1500, isLive: true, isSoldOut: false }, { id: "lager", posProductId: "pos_lager", category: "Beer", currentPriceMinor: 1000, floorPriceMinor: 700, ceilingPriceMinor: 1500, isLive: true, isSoldOut: false }];
+    const decisions = priceMarket(products, [{ pos_product_id: "pos_espresso", quantity: 3 }, { pos_product_id: "pos_margarita", quantity: 2 }, { pos_product_id: "pos_negroni", quantity: 1 }]);
+    expect(decisions).toMatchObject([{ productId: "espresso", movement: "up" }, { productId: "margarita", movement: "hold" }, { productId: "negroni", movement: "down" }, { productId: "lager", movement: "hold" }]);
   });
 
   it("imports a POS sale, publishes the market price, and keeps the POS and market price in sync", async () => {
@@ -41,13 +39,10 @@ describe("local market runner", () => {
 
     const result = await runMarketCycle({ supabase: new MemorySupabase(database), simulatorUrl: "http://simulator", venueSlug: "demo-venue", fetchImpl });
 
-    expect(result).toMatchObject({ importedSales: 1, publishedLines: 1, status: "published" });
+    expect(result).toMatchObject({ importedSales: 1, publishedLines: 0, status: "published" });
     expect(database.pos_sales_events).toHaveLength(1);
-    expect(database.market_products[0]).toMatchObject({ sales_velocity: 8, current_price_minor: 1250 });
-    expect(database.pos_products[0].current_price_minor).toBe(1250);
-    expect(publications[0].lines).toEqual([{ productId: "pos_cem", newPriceMinor: 1250 }]);
-    expect(database.price_publications[0].status).toBe("published");
-    expect(database.price_publication_lines[0]).toMatchObject({ status: "published", new_price_minor: 1250 });
+    expect(database.market_products[0].current_price_minor).toBe(1200);
+    expect(publications).toEqual([]);
   });
 });
 
@@ -63,6 +58,7 @@ class MemoryQuery {
   select() { this.operation = "select"; return this; }
   eq(column, value) { this.filters.push(row => row[column] === value); return this; }
   gte(column, value) { this.filters.push(row => row[column] >= value); return this; }
+  lt(column, value) { this.filters.push(row => row[column] < value); return this; }
   lte(column, value) { this.filters.push(row => row[column] <= value); return this; }
   not(column, operator, value) { if (operator === "is" && value === null) this.filters.push(row => row[column] !== null && row[column] !== undefined); return this; }
   order(column, { ascending }) { this.orderBy = { column, ascending }; return this; }

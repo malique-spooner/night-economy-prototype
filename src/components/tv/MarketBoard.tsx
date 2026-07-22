@@ -16,15 +16,21 @@ type Props = {
 };
 
 export function MarketBoard({ products, venue }: Props) {
-  const featuredProducts = getFeaturedProducts(products);
-  const groups = groupProductsByCategory(products);
+  const activeProducts = products.filter(product => product.isLive);
+  const featuredProducts = getFeaturedProducts(activeProducts);
+  const featuredCategory = featuredProducts[0] ? categoryLabel(featuredProducts[0].category) : "Live market";
+  const groups = groupProductsByCategory(activeProducts).sort(([left], [right]) => {
+    if (left === featuredProducts[0]?.category) return -1;
+    if (right === featuredProducts[0]?.category) return 1;
+    return 0;
+  });
 
   return (
     <div className="board">
       <div className="board-hdr">
         <span className="slbl">{marketBoardLabel(venue)}</span>
         <div className="board-view-indicator">
-          <span className="board-view-lbl">COCKTAILS</span>
+          <span className="board-view-lbl">{featuredCategory}</span>
           <div className="board-dots">
             <div className="bdot active"></div>
             <div className="bdot"></div>

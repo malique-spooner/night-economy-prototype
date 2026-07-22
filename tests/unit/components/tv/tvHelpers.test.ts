@@ -82,6 +82,7 @@ describe("tvHelpers", () => {
       product({ id: "priority", currentPriceMinor: 990, priority: true }),
       product({ id: "large-move", currentPriceMinor: 850 }),
       product({ id: "medium-move", currentPriceMinor: 1100 }),
+      product({ id: "inactive", currentPriceMinor: 1500, isLive: false }),
     ]);
 
     expect(featured.map(item => item.id)).toEqual(["priority", "large-move", "medium-move"]);
@@ -95,6 +96,16 @@ describe("tvHelpers", () => {
 
     expect(getStoryProduct(products)?.id).toBe("leader");
     expect(getStoryProduct([])).toBeNull();
+  });
+
+  it("does not select inactive products for the customer-facing market", () => {
+    const products = [
+      product({ id: "inactive", currentPriceMinor: 1500, isLive: false }),
+      product({ id: "live", currentPriceMinor: 1050 }),
+    ];
+
+    expect(getFeaturedProducts(products).map(item => item.id)).toEqual(["live"]);
+    expect(getStoryProduct(products)?.id).toBe("live");
   });
 
   it("labels the venue market status", () => {

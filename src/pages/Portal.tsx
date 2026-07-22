@@ -18,16 +18,20 @@ import { getCurrentSession, onAuthStateChange, signInWithEmail, signOut } from "
 import { getVenueMemberRole, type VenueMemberRole } from "../api/memberships";
 import {
   createMarketProductConfiguration,
+  getMarketProductPriceHistory,
   getPosProducts,
   updateMarketProduct,
   updateVenueMarketSettings,
   type MarketProductConfiguration,
+  type MarketPriceHistoryPoint,
   type MarketProductPatch,
   type PosProduct,
   type VenueMarketSettingsPatch,
 } from "../api/market";
 import { prepareMarketProductConfiguration } from "../components/portal/portalHelpers";
 import { PageSwitcher } from "./PageSwitcher";
+import { controlSimulator, getSimulatorState, simulatorStatus, updateSimulatorService, type SimulatorCrowd, type SimulatorState } from "../api/simulator";
+import { PortalSimulatorControls } from "../components/portal/PortalSimulatorControls";
 
 type Props = {
   venueSlug: string;
@@ -45,6 +49,11 @@ export function Portal({ venueSlug }: Props) {
   const [activeTab, setActiveTab] = useState<PortalTab>("start");
   const [signedInEmail, setSignedInEmail] = useState("");
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [priceHistory, setPriceHistory] = useState<MarketPriceHistoryPoint[]>([]);
+  const [priceHistoryLoading, setPriceHistoryLoading] = useState(false);
+  const [simulatorState, setSimulatorState] = useState<SimulatorState | null>(null);
+  const [simulatorError, setSimulatorError] = useState("");
 
   useEffect(() => {
     void refreshSession();
@@ -92,6 +101,60 @@ export function Portal({ venueSlug }: Props) {
       cancelled = true;
     };
   }, [isSignedIn, state?.source, state?.venue.id]);
+
+  useEffect(() => {
+    if (!simulatorStatus.ready) return undefined;
+    let cancelled = false;
+    async function refreshSimulator() {
+      try {
+        const nextState = await getSimulatorState();
+        if (!cancelled) {
+          setSimulatorState(nextState);
+          setSimulatorError("");
+        }
+      } catch (error) {
+        if (!cancelled) setSimulatorError(error instanceof Error ? error.message : "Could not reach the local POS simulator");
+      }
+    }
+    void refreshSimulator();
+    const timer = window.setInterval(() => { void refreshSimulator(); }, 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!state) return;
+    if (selectedProductId && state.products.some(product => product.id === selectedProductId)) return;
+    setSelectedProductId(state.products.find(product => product.isLive && !product.isSoldOut)?.id ?? state.products[0]?.id ?? null);
+  }, [selectedProductId, state]);
+
+  useEffect(() => {
+    if (!state || !selectedProductId || state.source === "seed") {
+      setPriceHistory([]);
+      setPriceHistoryLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setPriceHistoryLoading(true);
+    void getMarketProductPriceHistory(state.venue.id, selectedProductId)
+      .then(history => {
+        if (!cancelled) setPriceHistory(history);
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setPriceHistory([]);
+          setLastSavedMessage(error instanceof Error ? error.message : "Could not load price history");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPriceHistoryLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedProductId, state?.source, state?.venue.id]);
 
   useEffect(() => {
     if (!state) return;
@@ -213,6 +276,27 @@ export function Portal({ venueSlug }: Props) {
     }
   }
 
+  async function handleSimulatorControl(action: "start" | "pause" | "reset") {
+    try {
+      const nextState = await controlSimulator(action, action === "start" ? { speed: simulatorState?.service.speed ?? 32, crowd: simulatorState?.service.crowd ?? "normal" } : {});
+      setSimulatorState(nextState);
+      setSimulatorError("");
+      setLastSavedMessage(action === "reset" ? "Local test service reset. The market runner will clear its next cycle." : `Local test service ${action === "start" ? "started" : "paused"}.`);
+    } catch (error) {
+      setSimulatorError(error instanceof Error ? error.message : "Could not update the local test service");
+    }
+  }
+
+  async function handleSimulatorServiceChange(options: { crowd?: SimulatorCrowd; speed?: number }) {
+    try {
+      const nextState = await updateSimulatorService(options);
+      setSimulatorState(nextState);
+      setSimulatorError("");
+    } catch (error) {
+      setSimulatorError(error instanceof Error ? error.message : "Could not update local test service settings");
+    }
+  }
+
   async function refreshSession() {
     const session = await getCurrentSession();
     setIsSignedIn(Boolean(session));
@@ -277,10 +361,23 @@ export function Portal({ venueSlug }: Props) {
                     lastSavedMessage={lastSavedMessage}
                     onConfigurePosProduct={handleConfigurePosProduct}
                     onProductChange={handleProductChange}
+                    onSelectProduct={setSelectedProductId}
                     onVenueSettingsChange={handleVenueSettingsChange}
                     products={state.products}
+                    priceHistory={priceHistory}
+                    priceHistoryLoading={priceHistoryLoading}
                     posProducts={posProducts}
+                    selectedProductId={selectedProductId}
                     source={state.source}
+                    simulatorControls={
+                      <PortalSimulatorControls
+                        error={simulatorError}
+                        onControl={handleSimulatorControl}
+                        onServiceChange={handleSimulatorServiceChange}
+                        ready={simulatorStatus.ready}
+                        state={simulatorState}
+                      />
+                    }
                     venue={state.venue}
                   />
                 ) : (

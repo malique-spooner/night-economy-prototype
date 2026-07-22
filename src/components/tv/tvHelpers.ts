@@ -69,7 +69,7 @@ export function categoryChangePercent(products: MarketProduct[]) {
 
 export function getFeaturedProducts(products: MarketProduct[]) {
   return [...products]
-    .filter(product => !product.isSoldOut)
+    .filter(product => product.isLive && !product.isSoldOut)
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority ? -1 : 1;
       return Math.abs(productChangePercent(b)) - Math.abs(productChangePercent(a));
@@ -78,5 +78,5 @@ export function getFeaturedProducts(products: MarketProduct[]) {
 }
 
 export function getStoryProduct(products: MarketProduct[]) {
-  return getFeaturedProducts(products)[0] ?? products[0] ?? null;
+  return getFeaturedProducts(products)[0] ?? products.find(product => product.isLive) ?? null;
 }

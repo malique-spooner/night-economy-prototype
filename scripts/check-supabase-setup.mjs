@@ -14,6 +14,9 @@ const expectedMigrations = [
   "010_server_runner_privileges.sql",
   "011_link_demo_market_products_to_pos_products.sql",
   "012_align_demo_catalogue_with_simulator_product_ids.sql",
+  "013_tlj_menu_catalogue.sql",
+  "014_hide_legacy_demo_catalogue.sql",
+  "015_pos_catalogue_grouping.sql",
 ];
 
 const env = {

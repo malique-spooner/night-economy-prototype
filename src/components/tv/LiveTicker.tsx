@@ -8,7 +8,8 @@ type Props = {
 };
 
 export function LiveTicker({ products, venue }: Props) {
-  const tickerProducts = [...products, ...products];
+  const activeProducts = products.filter(product => product.isLive);
+  const tickerProducts = [...activeProducts, ...activeProducts];
 
   return (
     <div className="ticker ticker-bottom">

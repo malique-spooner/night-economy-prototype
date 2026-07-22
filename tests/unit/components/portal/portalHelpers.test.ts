@@ -41,6 +41,8 @@ describe("prepareMarketProductConfiguration", () => {
           currentPriceMinor: 1250,
           currency: "GBP",
           isAvailable: true,
+          category: "Cocktails",
+          subcategory: "Highballs",
         },
         products: [product],
       }),
@@ -60,7 +62,7 @@ describe("prepareMarketProductConfiguration", () => {
   it("marks a market configuration unavailable when the POS product is sold out", () => {
     const configured = prepareMarketProductConfiguration({
       id: "mp_new",
-      posProduct: { id: "pos_new", externalId: "pos_new", sku: "COCK-009", name: "Peach Highball", basePriceMinor: 1250, currentPriceMinor: 1250, currency: "GBP", isAvailable: false },
+      posProduct: { id: "pos_new", externalId: "pos_new", sku: "COCK-009", name: "Peach Highball", basePriceMinor: 1250, currentPriceMinor: 1250, currency: "GBP", isAvailable: false, category: "Cocktails", subcategory: "Highballs" },
       products: [],
     });
     expect(configured.isSoldOut).toBe(true);

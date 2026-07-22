@@ -6,40 +6,28 @@ const simulatorRunnerSource = readFileSync("pos-simulator/src/marketPricing.mjs"
 
 const sharedSnippets = [
   {
-    label: "price step",
-    pattern: /const STEP_MINOR = 50;/,
+    label: "range-aware market intensity setting",
+    pattern: /const MARKET_INTENSITY = 1\.25;/,
   },
   {
-    label: "strong sales threshold",
-    pattern: /sales(?:_velocity|Velocity) >= 7/,
+    label: "zero-sum market points",
+    pattern: /marketPoints = .*ownUnits - categoryUnits/,
   },
   {
-    label: "soft sales threshold",
-    pattern: /sales(?:_velocity|Velocity) <= 2/,
+    label: "activity-aware range movement",
+    pattern: /activityFactor[\s\S]+allowedRange[\s\S]+percentageChange/,
   },
   {
     label: "non-tradable hold reason",
     pattern: /Product is not currently tradable\./,
   },
   {
-    label: "up movement reason",
-    pattern: /Strong recent sales velocity pushed the price up one step\./,
+    label: "category peer reason",
+    pattern: /category peers/,
   },
   {
-    label: "down movement reason",
-    pattern: /Soft recent sales velocity pulled the price down one step\./,
-  },
-  {
-    label: "floor hold reason",
-    pattern: /Price held at the product floor\./,
-  },
-  {
-    label: "ceiling hold reason",
-    pattern: /Price held at the product ceiling\./,
-  },
-  {
-    label: "steady hold reason",
-    pattern: /Sales velocity was steady, so the price held\./,
+    label: "balanced hold reason",
+    pattern: /Orders were evenly balanced within this category, so the price held\./,
   },
 ];
 

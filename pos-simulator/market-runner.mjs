@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { fileURLToPath } from "node:url";
-import { priceMarketProduct, salesVelocityByPosProduct } from "./src/marketPricing.mjs";
+import { priceMarket } from "./src/marketPricing.mjs";
 
 export async function startMarketRunner({
   env = { ...readEnvFile(".env"), ...readEnvFile(".env.local"), ...process.env },
@@ -22,11 +22,15 @@ export async function startMarketRunner({
     global: { fetch: fetchWithSecretKey },
   });
   let running = false;
+  let lastProcessedRoundEnd;
+  let lastSimulatorResetId;
   async function cycle() {
     if (running) return;
     running = true;
     try {
-      const result = await runMarketCycle({ supabase, simulatorUrl, venueSlug });
+      const result = await runMarketCycle({ supabase, simulatorUrl, venueSlug, lastProcessedRoundEnd, lastSimulatorResetId });
+      if (result.processedRoundEnd) lastProcessedRoundEnd = result.processedRoundEnd;
+      if (result.simulatorResetId !== undefined) lastSimulatorResetId = result.simulatorResetId;
       log.log(`${result.referenceTime} ${result.status}: ${result.importedSales} sale line${result.importedSales === 1 ? "" : "s"}, ${result.publishedLines} price update${result.publishedLines === 1 ? "" : "s"}`);
     } catch (error) {
       log.error(`Market runner failed: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -47,7 +51,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   });
 }
 
-export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchImpl = fetch }) {
+export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchImpl = fetch, lastProcessedRoundEnd, lastSimulatorResetId } = {}) {
   const [{ data: venue, error: venueError }, simulatorState] = await Promise.all([
     supabase.from("venues").select("id, slug, market_live").eq("slug", venueSlug).maybeSingle(),
     getJson(fetchImpl, `${simulatorUrl}/v1/simulation/state`),
@@ -66,6 +70,9 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
   if (connection.status !== "active") throw new Error("Simulator POS connection is not active");
 
   const posBaseUrl = connection.base_url || simulatorUrl;
+  const simulatorResetId = Number(simulatorState.service.resetId ?? 0);
+  const resetDetected = lastSimulatorResetId !== undefined && lastSimulatorResetId !== simulatorResetId;
+  if (resetDetected) await resetServiceData({ supabase, venueId: venue.id });
   const productMap = await syncPosProducts({ supabase, fetchImpl, posBaseUrl, venueId: venue.id, connectionId: connection.id });
   const importedSales = await importSales({
     supabase,
@@ -78,48 +85,49 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
   const referenceTime = simulatorState.service.simulatedTime;
 
   if (!venue.market_live) {
-    return { importedSales, publishedLines: 0, referenceTime, status: "market paused" };
+    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; market paused" : "market paused" };
   }
 
-  const windowStart = new Date(Date.parse(referenceTime) - 2 * 60_000).toISOString();
-  const [{ data: marketProducts, error: marketError }, { data: recentSales, error: salesError }] = await Promise.all([
+  const roundEnd = new Date(Math.floor(Date.parse(referenceTime) / (15 * 60_000)) * 15 * 60_000).toISOString();
+  const roundStart = new Date(Date.parse(roundEnd) - 15 * 60_000).toISOString();
+  if (lastProcessedRoundEnd === roundEnd) {
+    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; waiting for next market round" : "waiting for next market round" };
+  }
+
+  const [{ data: latestSnapshot, error: snapshotLoadError }, { data: marketProducts, error: marketError }, { data: recentSales, error: salesError }] = await Promise.all([
+    supabase.from("market_price_snapshots").select("snapshot").eq("venue_id", venue.id).order("created_at", { ascending: false }).limit(1),
     supabase
       .from("market_products")
-      .select("id, pos_product_id, current_price_minor, floor_price_minor, ceiling_price_minor, is_live, is_sold_out")
+      .select("id, pos_product_id, category, base_price_minor, current_price_minor, floor_price_minor, ceiling_price_minor, is_live, is_sold_out")
       .eq("venue_id", venue.id)
       .not("pos_product_id", "is", null),
     supabase
       .from("pos_sales_events")
       .select("pos_product_id, quantity")
       .eq("venue_id", venue.id)
-      .gte("occurred_at", windowStart)
-      .lte("occurred_at", referenceTime),
+      .gte("occurred_at", roundStart)
+      .lt("occurred_at", roundEnd),
   ]);
+  throwIfError(snapshotLoadError, "load last market round");
   throwIfError(marketError, "load mapped market products");
   throwIfError(salesError, "load recent POS sales");
+  if (latestSnapshot?.[0]?.snapshot?.roundEnd === roundEnd) {
+    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; waiting for next market round" : "waiting for next market round" };
+  }
 
-  const velocities = salesVelocityByPosProduct(recentSales ?? []);
   const pricedProducts = (marketProducts ?? []).map(product => ({
     id: product.id,
     posProductId: product.pos_product_id,
+    basePriceMinor: product.base_price_minor,
     currentPriceMinor: product.current_price_minor,
     floorPriceMinor: product.floor_price_minor,
     ceilingPriceMinor: product.ceiling_price_minor,
-    salesVelocity: velocities.get(product.pos_product_id) ?? 0,
+    category: product.category,
     isLive: product.is_live,
     isSoldOut: product.is_sold_out,
   }));
-  const decisions = pricedProducts.map(priceMarketProduct);
+  const decisions = priceMarket(pricedProducts, recentSales ?? []);
   const now = new Date().toISOString();
-
-  await Promise.all(
-    pricedProducts.map(product =>
-      update(supabase, "market_products", {
-        sales_velocity: product.salesVelocity,
-        updated_at: now,
-      }, "id", product.id, "update market sales velocity"),
-    ),
-  );
 
   const changed = decisions
     .map((decision, index) => ({ ...decision, posProductId: pricedProducts[index].posProductId }))
@@ -150,11 +158,38 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
     venue_id: venue.id,
     reason: "simulator_cycle",
     status: "published",
-    snapshot: { referenceTime, importedSales, decisions },
+    snapshot: { referenceTime, roundStart, roundEnd, importedSales, decisions },
   });
   throwIfError(snapshotError, "write market snapshot");
 
-  return { importedSales, publishedLines: publishedLines.length, referenceTime, status: "published" };
+  return { importedSales, publishedLines: publishedLines.length, referenceTime, processedRoundEnd: roundEnd, simulatorResetId, status: resetDetected ? "service reset; published" : "published" };
+}
+
+async function resetServiceData({ supabase, venueId }) {
+  const [{ data: publications, error: publicationsError }, { data: marketProducts, error: marketError }, { data: posProducts, error: posError }] = await Promise.all([
+    supabase.from("price_publications").select("id").eq("venue_id", venueId),
+    supabase.from("market_products").select("id, base_price_minor").eq("venue_id", venueId),
+    supabase.from("pos_products").select("id, base_price_minor").eq("venue_id", venueId),
+  ]);
+  throwIfError(publicationsError, "load price publications for reset");
+  throwIfError(marketError, "load market products for reset");
+  throwIfError(posError, "load POS products for reset");
+
+  const publicationIds = (publications ?? []).map(publication => publication.id);
+  if (publicationIds.length) {
+    const { error } = await supabase.from("price_publication_lines").delete().in("publication_id", publicationIds);
+    throwIfError(error, "delete price publication lines for reset");
+  }
+  const deletes = await Promise.all([
+    supabase.from("price_publications").delete().eq("venue_id", venueId),
+    supabase.from("market_price_snapshots").delete().eq("venue_id", venueId),
+    supabase.from("pos_sales_events").delete().eq("venue_id", venueId),
+  ]);
+  deletes.forEach(result => throwIfError(result.error, "delete prior service data"));
+  await Promise.all([
+    ...(marketProducts ?? []).map(product => update(supabase, "market_products", { current_price_minor: product.base_price_minor, updated_at: new Date().toISOString() }, "id", product.id, "reset market price")),
+    ...(posProducts ?? []).map(product => update(supabase, "pos_products", { current_price_minor: product.base_price_minor, updated_at: new Date().toISOString() }, "id", product.id, "reset POS price")),
+  ]);
 }
 
 async function syncPosProducts({ supabase, fetchImpl, posBaseUrl, venueId, connectionId }) {
@@ -164,10 +199,10 @@ async function syncPosProducts({ supabase, fetchImpl, posBaseUrl, venueId, conne
   ]);
   throwIfError(existingError, "load synced POS products");
   const existingByExternalId = new Map((existing ?? []).map(product => [product.external_id, product]));
-  const productMap = new Map();
-
-  for (const product of products) {
-    const row = {
+  const rows = products.map(product => {
+    const existingProduct = existingByExternalId.get(product.id);
+    return {
+      id: existingProduct?.id ?? `pos_${connectionId}_${product.id}`.replace(/[^a-zA-Z0-9_]/g, "_"),
       venue_id: venueId,
       pos_connection_id: connectionId,
       external_id: product.id,
@@ -177,23 +212,50 @@ async function syncPosProducts({ supabase, fetchImpl, posBaseUrl, venueId, conne
       current_price_minor: product.currentPriceMinor,
       currency: product.currency,
       is_available: product.isAvailable,
+      is_current: true,
+      category: product.category,
+      subcategory: product.subcategory,
+      product_group: product.productGroup,
+      serve_size: product.serveSize,
       synced_at: product.updatedAt,
       updated_at: new Date().toISOString(),
     };
-    const existingProduct = existingByExternalId.get(product.id);
-    if (existingProduct) {
-      await update(supabase, "pos_products", row, "id", existingProduct.id, "update POS product");
-      productMap.set(product.id, existingProduct.id);
-    } else {
-      const id = `pos_${connectionId}_${product.id}`.replace(/[^a-zA-Z0-9_]/g, "_");
-      const { error } = await supabase.from("pos_products").insert({ id, ...row });
-      throwIfError(error, "insert POS product");
-      productMap.set(product.id, id);
-    }
-  }
-
-  return productMap;
+  });
+  const { error } = await supabase.from("pos_products").upsert(rows, { onConflict: "id" });
+  throwIfError(error, "sync POS products");
+  await ensureMarketProducts({ supabase, venueId, rows, products });
+  return new Map(products.map((product, index) => [product.id, rows[index].id]));
 }
+
+async function ensureMarketProducts({ supabase, venueId, rows, products }) {
+  const { data: existing, error: existingError } = await supabase
+    .from("market_products")
+    .select("pos_product_id")
+    .eq("venue_id", venueId)
+    .not("pos_product_id", "is", null);
+  throwIfError(existingError, "load configured market products");
+  const configuredPosProductIds = new Set((existing ?? []).map(product => product.pos_product_id));
+  const marketRows = rows.flatMap((row, index) => (configuredPosProductIds.has(row.id) ? [] : [{
+    id: `mp_${row.id}`,
+    venue_id: venueId,
+    pos_product_id: row.id,
+    market_symbol: `POS_${row.id}`,
+    display_name: products[index].name,
+    category: products[index].category || "Uncategorised",
+    base_price_minor: products[index].basePriceMinor,
+    current_price_minor: products[index].currentPriceMinor,
+    floor_price_minor: Math.round(products[index].basePriceMinor * 0.8),
+    ceiling_price_minor: Math.round(products[index].basePriceMinor * 1.2),
+    sales_velocity: 0,
+    is_live: false,
+    is_sold_out: !products[index].isAvailable,
+    priority: false,
+  }]));
+  if (!marketRows.length) return;
+  const { error } = await supabase.from("market_products").insert(marketRows);
+  throwIfError(error, "create inactive market products from POS catalogue");
+}
+
 
 async function importSales({ supabase, fetchImpl, posBaseUrl, venueId, connectionId, productMap }) {
   const { data: latest, error: latestError } = await supabase

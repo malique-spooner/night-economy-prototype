@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   mapMarketProductRow,
+  mapMarketPriceSnapshotRow,
   mapVenueRow,
   throwIfSupabaseQueryError,
   toMarketProductRowPatch,
@@ -94,6 +95,30 @@ describe("mapMarketProductRow", () => {
 
   it("defaults missing sales velocity for older rows", () => {
     expect(mapMarketProductRow({ ...productRow, sales_velocity: null }).salesVelocity).toBe(4);
+  });
+});
+
+describe("mapMarketPriceSnapshotRow", () => {
+  it("reads one product's saved price decision from a market round", () => {
+    expect(mapMarketPriceSnapshotRow({
+      created_at: "2026-07-22T18:15:00.000Z",
+      snapshot: {
+        roundEnd: "2026-07-22T18:15:00.000Z",
+        decisions: [{ productId: "product_123", oldPriceMinor: 680, newPriceMinor: 692, movement: "up" }],
+      },
+    }, "product_123")).toEqual({
+      at: "2026-07-22T18:15:00.000Z",
+      oldPriceMinor: 680,
+      priceMinor: 692,
+      movement: "up",
+    });
+  });
+
+  it("ignores snapshots that do not include the selected product", () => {
+    expect(mapMarketPriceSnapshotRow({
+      created_at: "2026-07-22T18:15:00.000Z",
+      snapshot: { decisions: [] },
+    }, "product_123")).toBeNull();
   });
 });
 

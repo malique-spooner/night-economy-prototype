@@ -26,6 +26,13 @@ export type VenueMarketSettingsPatch = Partial<VenueMarketSettings>;
 
 export type MarketProductConfiguration = MarketProduct;
 
+export type MarketPriceHistoryPoint = {
+  at: string;
+  oldPriceMinor: number;
+  priceMinor: number;
+  movement: "up" | "down" | "hold";
+};
+
 export type PosProduct = {
   id: string;
   externalId: string;
@@ -35,6 +42,10 @@ export type PosProduct = {
   currentPriceMinor: number;
   currency: string;
   isAvailable: boolean;
+  category: string;
+  subcategory: string;
+  productGroup?: string;
+  serveSize?: string;
 };
 
 export type VenueRow = {
@@ -75,6 +86,15 @@ type PosProductRow = {
   current_price_minor: number;
   currency: string;
   is_available: boolean;
+  category?: string | null;
+  subcategory?: string | null;
+  product_group?: string | null;
+  serve_size?: string | null;
+};
+
+export type MarketPriceSnapshotRow = {
+  created_at: string;
+  snapshot: unknown;
 };
 
 type SupabaseQueryError = {
@@ -129,6 +149,10 @@ export function mapPosProductRow(row: PosProductRow): PosProduct {
     currentPriceMinor: row.current_price_minor,
     currency: row.currency,
     isAvailable: row.is_available,
+    category: row.category ?? "Uncategorised",
+    subcategory: row.subcategory ?? "",
+    ...(row.product_group ? { productGroup: row.product_group } : {}),
+    ...(row.serve_size ? { serveSize: row.serve_size } : {}),
   };
 }
 
@@ -167,9 +191,43 @@ export async function getPosProducts(venueId: string): Promise<PosProduct[]> {
     .from("pos_products")
     .select("*")
     .eq("venue_id", venueId)
+    .eq("is_current", true)
     .order("source_name");
   throwIfSupabaseQueryError(error, "Could not load POS products");
   return (data ?? []).map(mapPosProductRow);
+}
+
+/** Returns the actual completed market rounds for one product, oldest first. */
+export async function getMarketProductPriceHistory(venueId: string, productId: string): Promise<MarketPriceHistoryPoint[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("market_price_snapshots")
+    .select("created_at, snapshot")
+    .eq("venue_id", venueId)
+    .order("created_at", { ascending: true });
+  throwIfSupabaseQueryError(error, "Could not load price history");
+
+  return (data ?? [])
+    .map(row => mapMarketPriceSnapshotRow(row as MarketPriceSnapshotRow, productId))
+    .filter((point): point is MarketPriceHistoryPoint => point !== null);
+}
+
+export function mapMarketPriceSnapshotRow(
+  row: MarketPriceSnapshotRow,
+  productId: string,
+): MarketPriceHistoryPoint | null {
+  if (!isRecord(row.snapshot) || !Array.isArray(row.snapshot.decisions)) return null;
+
+  const decision = row.snapshot.decisions.find(item => isRecord(item) && item.productId === productId);
+  if (!isRecord(decision) || !isPriceDecision(decision)) return null;
+
+  return {
+    at: typeof row.snapshot.roundEnd === "string" ? row.snapshot.roundEnd : row.created_at,
+    oldPriceMinor: decision.oldPriceMinor,
+    priceMinor: decision.newPriceMinor,
+    movement: decision.movement,
+  };
 }
 
 export async function updateMarketProduct(productId: string, patch: MarketProductPatch) {
@@ -252,6 +310,8 @@ function demoPosProducts(): PosProduct[] {
     currentPriceMinor: product.currentPriceMinor,
     currency: seedVenue.currency,
     isAvailable: !product.isSoldOut,
+    category: product.category,
+    subcategory: "",
   }));
 }
 
@@ -280,4 +340,20 @@ function withUpdatedAt<T extends Record<string, unknown>>(rowPatch: T) {
     ...rowPatch,
     updated_at: new Date().toISOString(),
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isPriceDecision(value: Record<string, unknown>): value is {
+  productId: string;
+  oldPriceMinor: number;
+  newPriceMinor: number;
+  movement: "up" | "down" | "hold";
+} {
+  return typeof value.productId === "string"
+    && typeof value.oldPriceMinor === "number"
+    && typeof value.newPriceMinor === "number"
+    && (value.movement === "up" || value.movement === "down" || value.movement === "hold");
 }

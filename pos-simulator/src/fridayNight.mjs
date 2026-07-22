@@ -1,28 +1,15 @@
 const SERVICE_MINUTES = 8 * 60;
+const EVENING_MINUTES = 6 * 60;
+const FRIDAY_EVENING_REVENUE_TARGET_MINOR = 1_000_000;
+const LATE_SERVICE_REVENUE_TARGET_MINOR = 160_000;
 
-const defaultProducts = [
-  { id: "pos_cem", sku: "COCK-001", name: "Classic Espresso Martini", basePriceMinor: 1200, hourlyDemand: 7.5 },
-  { id: "pos_cmar", sku: "COCK-002", name: "Classic Margarita", basePriceMinor: 1200, hourlyDemand: 6.5 },
-  { id: "pos_t75", sku: "COCK-003", name: "The 75th Peel", basePriceMinor: 1400, hourlyDemand: 3.2 },
-  { id: "pos_wb", sku: "MOCK-001", name: "Woodland Bloom", basePriceMinor: 800, hourlyDemand: 2.2 },
-  { id: "pos_negroni", sku: "COCK-004", name: "House Negroni", basePriceMinor: 1250, hourlyDemand: 5.4 },
-  { id: "pos_spritz", sku: "COCK-005", name: "Aperitivo Spritz", basePriceMinor: 1050, hourlyDemand: 4.1 },
-  { id: "pos_mojito", sku: "COCK-006", name: "Garden Mojito", basePriceMinor: 1100, hourlyDemand: 4.7 },
-  { id: "pos_old", sku: "COCK-007", name: "Old Fashioned", basePriceMinor: 1300, hourlyDemand: 3.6 },
-  { id: "pos_bloody", sku: "COCK-008", name: "Bloody Mary", basePriceMinor: 1000, hourlyDemand: 1.4 },
-];
+import { tljCatalogue } from "./tljCatalogue.mjs";
 
-const demandCurve = [
-  [0, 0.22],
-  [60, 0.42],
-  [120, 0.72],
-  [180, 1],
-  [240, 1.42],
-  [300, 1.62],
-  [360, 1.32],
-  [420, 0.78],
-  [480, 0.18],
-];
+const defaultProducts = tljCatalogue;
+
+const demandCurve = [[0, 0.3], [60, 0.55], [120, 0.9], [180, 1.35], [240, 1.8], [300, 2.05], [360, 1.55], [420, 0.7], [480, 0.2]];
+const categoryMix = { Beer: 0.45, Wine: 0.18, Cocktails: 0.16, Spirits: 0.13, "Other Drinks": 0.08 };
+const revenuePlan = buildRevenuePlan();
 
 export function createFridayNightSimulation({ seed = 20260717 } = {}) {
   let random = createRandom(seed);
@@ -36,6 +23,8 @@ export function createFridayNightSimulation({ seed = 20260717 } = {}) {
   let carryMinutes = 0;
   let rushUntilMinute = 0;
   let slowdownUntilMinute = 0;
+  let plannedRevenueMinor = 0;
+  let resetId = 0;
 
   function getState() {
     return {
@@ -44,6 +33,7 @@ export function createFridayNightSimulation({ seed = 20260717 } = {}) {
         isComplete: minute >= SERVICE_MINUTES,
         minute,
         running,
+        resetId,
         serviceEnd: serviceTime(SERVICE_MINUTES),
         serviceStart: serviceTime(0),
         simulatedTime: serviceTime(minute),
@@ -55,6 +45,7 @@ export function createFridayNightSimulation({ seed = 20260717 } = {}) {
       totals: {
         salesCount: sales.length,
         unitsSold: sales.reduce((total, sale) => total + sale.quantity, 0),
+        revenueMinor: sales.reduce((total, sale) => total + sale.quantity * sale.unitPriceMinor, 0),
       },
     };
   }
@@ -142,20 +133,21 @@ export function createFridayNightSimulation({ seed = 20260717 } = {}) {
     carryMinutes = 0;
     rushUntilMinute = 0;
     slowdownUntilMinute = 0;
+    plannedRevenueMinor = 0;
+    resetId += 1;
   }
 
   function generateSalesForMinute(serviceMinute) {
-    const level = serviceDemand(serviceMinute) * crowdMultiplier(crowd);
     const eventMultiplier = serviceMinute < rushUntilMinute ? 2.1 : serviceMinute < slowdownUntilMinute ? 0.38 : 1;
+    plannedRevenueMinor += revenuePlan[serviceMinute] * crowdMultiplier(crowd) * eventMultiplier;
+    let actualRevenueMinor = sales.reduce((total, sale) => total + sale.quantity * sale.unitPriceMinor, 0);
 
-    for (const product of products) {
-      if (!product.isAvailable) continue;
-      const priceRatio = product.currentPriceMinor / product.basePriceMinor;
-      const priceMultiplier = Math.max(0.35, 1 - Math.max(0, priceRatio - 1) * 0.65);
-      const chance = (product.hourlyDemand * level * eventMultiplier * priceMultiplier) / 60;
-      if (random() >= chance) continue;
-
-      const quantity = random() < 0.16 ? 2 : 1;
+    // A real Friday is calibrated by takings first. Products are then chosen from
+    // a pub-oriented category mix and a modest within-category popularity weight.
+    while (actualRevenueMinor < plannedRevenueMinor) {
+      const product = chooseProduct(products, random);
+      if (!product) return;
+      const quantity = random() < 0.18 && actualRevenueMinor + product.currentPriceMinor * 2 <= plannedRevenueMinor ? 2 : 1;
       sales.push({
         id: `sale_${String(serviceMinute).padStart(3, "0")}_${String(sales.length + 1).padStart(4, "0")}`,
         occurredAt: serviceTime(serviceMinute),
@@ -164,6 +156,7 @@ export function createFridayNightSimulation({ seed = 20260717 } = {}) {
         unitPriceMinor: product.currentPriceMinor,
         currency: "GBP",
       });
+      actualRevenueMinor += quantity * product.currentPriceMinor;
     }
   }
 
@@ -188,6 +181,10 @@ function toPublicProduct(product) {
     basePriceMinor: product.basePriceMinor,
     currentPriceMinor: product.currentPriceMinor,
     currency: product.currency,
+    category: product.category,
+    subcategory: product.subcategory,
+    productGroup: product.productGroup,
+    serveSize: product.serveSize,
     isAvailable: product.isAvailable,
     updatedAt: product.updatedAt,
   };
@@ -203,6 +200,44 @@ function serviceDemand(minute) {
   }
 
   return demandCurve.at(-1)[1];
+}
+
+function buildRevenuePlan() {
+  const weights = Array.from({ length: SERVICE_MINUTES }, (_, minute) => serviceDemand(minute));
+  const eveningTotal = weights.slice(0, EVENING_MINUTES).reduce((total, value) => total + value, 0);
+  const lateTotal = weights.slice(EVENING_MINUTES).reduce((total, value) => total + value, 0);
+  return weights.map((weight, minute) => {
+    const target = minute < EVENING_MINUTES ? FRIDAY_EVENING_REVENUE_TARGET_MINOR : LATE_SERVICE_REVENUE_TARGET_MINOR;
+    const total = minute < EVENING_MINUTES ? eveningTotal : lateTotal;
+    return target * weight / total;
+  });
+}
+
+function chooseProduct(products, random) {
+  const availableByCategory = new Map();
+  for (const product of products) {
+    if (!product.isAvailable) continue;
+    availableByCategory.set(product.category, [...(availableByCategory.get(product.category) ?? []), product]);
+  }
+  const categories = [...availableByCategory.keys()];
+  const category = weightedChoice(categories, item => categoryMix[item] ?? 0.01, random);
+  if (!category) return null;
+  return weightedChoice(availableByCategory.get(category), product => {
+    const priceRatio = product.currentPriceMinor / product.basePriceMinor;
+    const priceMultiplier = Math.max(0.35, 1 - Math.max(0, priceRatio - 1) * 0.65);
+    return product.demandWeight * priceMultiplier;
+  }, random);
+}
+
+function weightedChoice(items, weightOf, random) {
+  const total = items.reduce((sum, item) => sum + Math.max(0, weightOf(item)), 0);
+  if (!total) return items[0] ?? null;
+  let point = random() * total;
+  for (const item of items) {
+    point -= Math.max(0, weightOf(item));
+    if (point <= 0) return item;
+  }
+  return items.at(-1) ?? null;
 }
 
 function crowdMultiplier(crowd) {

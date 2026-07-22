@@ -7,11 +7,13 @@ type Props = {
   allProducts: MarketProduct[];
   category: string;
   onProductChange: (productId: string, patch: MarketProductPatch, options?: { persist?: boolean }) => void;
+  onSelectProduct: (productId: string) => void;
   posProducts: PosProduct[];
   products: MarketProduct[];
+  selectedProductId: string | null;
 };
 
-export function PortalDrinkGroup({ allProducts, category, onProductChange, posProducts, products }: Props) {
+export function PortalDrinkGroup({ allProducts, category, onProductChange, onSelectProduct, posProducts, products, selectedProductId }: Props) {
   return (
     <section className="portal-drink-group">
       <div className="portal-drink-group-head">
@@ -19,7 +21,7 @@ export function PortalDrinkGroup({ allProducts, category, onProductChange, posPr
         <span>{products.length} drinks</span>
       </div>
       {products.map(product => (
-        <PortalDrinkRow allProducts={allProducts} onChange={onProductChange} posProduct={posProducts.find(posProduct => posProduct.id === product.posProductId)} product={product} key={product.id} />
+        <PortalDrinkRow allProducts={allProducts} onChange={onProductChange} onSelect={onSelectProduct} posProduct={posProducts.find(posProduct => posProduct.id === product.posProductId)} product={product} selected={product.id === selectedProductId} key={product.id} />
       ))}
     </section>
   );

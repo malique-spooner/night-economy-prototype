@@ -22,18 +22,11 @@ The product goal is simple:
 - **Presentation layer**: handles TV cards, mobile cards, breaking news, and product assets.
 - **Portal**: operator controls for floors, ceilings, images, and priority display items.
 
+Each live product has one operator-defined main category tag. The engine uses only the active products and category tags in the current market.
+
 ## Operating Loop
 
-Night Economy uses one shared 2-minute market tick.
-
-Each tick:
-
-1. Pulls the latest sales.
-2. Recalculates prices.
-3. Clamps prices to guardrails.
-4. Saves a snapshot.
-5. Publishes the batch to Lightspeed.
-6. Updates the board from the same batch.
+Night Economy reads sales, evaluates the category-based pricing rules on a fixed cadence, then publishes one shared batch of prices to the POS and board. The exact cadence is part of the pricing configuration.
 
 ## Core Data
 
@@ -63,13 +56,13 @@ The product state is built around:
 
 ## Detailed Docs
 
-- Engine v1: [engine-v1.md](./engine-v1.md)
+- Pricing rules: [pricing-engine-rules.md](./pricing-engine-rules.md)
 - Lightspeed K-Series: [lightspeed-integration-schema.md](./lightspeed-integration-schema.md)
 - POS contract: [pos-integration-contract.md](./pos-integration-contract.md)
 
 ## Out of Scope for V1
 
-- self-learning pricing
+- historic-data learning and optimisation
 - stock control
 - availability sync
 - black-box model behavior
