@@ -16,7 +16,9 @@
 
 ## The market points rule
 
-- The market works in 15-minute rounds.
+- The whole market updates every 5 minutes.
+- Each update uses only the previous 5 minutes of POS sales.
+- All live categories update together; each drink still competes only with its own category peers.
 - If a category has **N** live products, each sale gives the sold product **+(N−1) market points**.
 - That same sale gives every other live product in the category **−1 point**.
 - This makes every sale exactly zero-sum: the category’s total points always equal zero.

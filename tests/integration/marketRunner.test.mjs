@@ -18,7 +18,7 @@ describe("local market runner", () => {
       venues: [{ id: "ven_demo", slug: "demo-venue", market_live: true }],
       pos_connections: [{ id: "pos_sim_demo", venue_id: "ven_demo", provider: "simulator", base_url: "http://simulator", status: "active" }],
       pos_products: [{ id: "db_pos_cem", venue_id: "ven_demo", pos_connection_id: "pos_sim_demo", external_id: "pos_cem", sku: "COCK-001", source_name: "Classic Espresso Martini", base_price_minor: 1200, current_price_minor: 1200, currency: "GBP", is_available: true }],
-      market_products: [{ id: "mp_cem", venue_id: "ven_demo", pos_product_id: "db_pos_cem", current_price_minor: 1200, floor_price_minor: 800, ceiling_price_minor: 1800, is_live: true, is_sold_out: false }],
+      market_products: [{ id: "mp_cem", venue_id: "ven_demo", pos_product_id: "db_pos_cem", category: "Cocktails", current_price_minor: 1200, floor_price_minor: 800, ceiling_price_minor: 1800, is_live: true, is_sold_out: false }],
       pos_sales_events: [],
       market_price_snapshots: [],
       price_publications: [],
@@ -38,9 +38,18 @@ describe("local market runner", () => {
     };
 
     const result = await runMarketCycle({ supabase: new MemorySupabase(database), simulatorUrl: "http://simulator", venueSlug: "demo-venue", fetchImpl });
+    const duplicate = await runMarketCycle({
+      supabase: new MemorySupabase(database),
+      simulatorUrl: "http://simulator",
+      venueSlug: "demo-venue",
+      fetchImpl,
+      lastProcessedRoundEnd: result.processedRoundEnd,
+    });
 
     expect(result).toMatchObject({ importedSales: 1, publishedLines: 0, status: "published" });
+    expect(duplicate).toMatchObject({ publishedLines: 0, status: "waiting for next five-minute round" });
     expect(database.pos_sales_events).toHaveLength(1);
+    expect(database.market_price_snapshots).toHaveLength(1);
     expect(database.market_products[0].current_price_minor).toBe(1200);
     expect(publications).toEqual([]);
   });

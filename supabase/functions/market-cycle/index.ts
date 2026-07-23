@@ -29,6 +29,7 @@ type PriceDecision = {
 };
 
 const MARKET_INTENSITY = 1.25;
+const MARKET_CYCLE_MS = 5 * 60_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,7 +89,7 @@ async function handleRequest(request: Request) {
     "load market products",
   );
   const cycleEnd = new Date();
-  const cycleStart = new Date(cycleEnd.getTime() - 15 * 60_000);
+  const cycleStart = new Date(cycleEnd.getTime() - MARKET_CYCLE_MS);
   const sales = await restJson<PosSaleEvent[]>(
     `${supabaseUrl}/rest/v1/pos_sales_events?venue_id=eq.${encodeURIComponent(venue.id)}&occurred_at=gte.${encodeURIComponent(cycleStart.toISOString())}&occurred_at=lte.${encodeURIComponent(cycleEnd.toISOString())}&select=pos_product_id,quantity`,
     { headers },
@@ -98,7 +99,7 @@ async function handleRequest(request: Request) {
   const updatedAt = new Date().toISOString();
 
   await Promise.all(
-    decisions.map(decision =>
+    decisions.filter(decision => decision.oldPriceMinor !== decision.newPriceMinor).map(decision =>
       restRequest(`${supabaseUrl}/rest/v1/market_products?id=eq.${encodeURIComponent(decision.productId)}`, {
         method: "PATCH",
         headers,

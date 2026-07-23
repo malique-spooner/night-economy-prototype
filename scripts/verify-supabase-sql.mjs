@@ -18,6 +18,7 @@ const expectedMigrations = [
   "013_tlj_menu_catalogue.sql",
   "014_hide_legacy_demo_catalogue.sql",
   "015_pos_catalogue_grouping.sql",
+  "016_configure_wine_market_variants.sql",
 ];
 
 const migrationFiles = readdirSync(migrationsDir)

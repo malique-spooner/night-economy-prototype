@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { fileURLToPath } from "node:url";
 import { priceMarket } from "./src/marketPricing.mjs";
 
+const MARKET_CYCLE_MS = 5 * 60_000;
+
 export async function startMarketRunner({
   env = { ...readEnvFile(".env"), ...readEnvFile(".env.local"), ...process.env },
   log = console,
@@ -88,10 +90,10 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
     return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; market paused" : "market paused" };
   }
 
-  const roundEnd = new Date(Math.floor(Date.parse(referenceTime) / (15 * 60_000)) * 15 * 60_000).toISOString();
-  const roundStart = new Date(Date.parse(roundEnd) - 15 * 60_000).toISOString();
+  const roundEnd = new Date(Math.floor(Date.parse(referenceTime) / MARKET_CYCLE_MS) * MARKET_CYCLE_MS).toISOString();
+  const roundStart = new Date(Date.parse(roundEnd) - MARKET_CYCLE_MS).toISOString();
   if (lastProcessedRoundEnd === roundEnd) {
-    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; waiting for next market round" : "waiting for next market round" };
+    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; waiting for next five-minute round" : "waiting for next five-minute round" };
   }
 
   const [{ data: latestSnapshot, error: snapshotLoadError }, { data: marketProducts, error: marketError }, { data: recentSales, error: salesError }] = await Promise.all([
@@ -110,9 +112,9 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
   ]);
   throwIfError(snapshotLoadError, "load last market round");
   throwIfError(marketError, "load mapped market products");
-  throwIfError(salesError, "load recent POS sales");
+  throwIfError(salesError, "load five-minute sales window");
   if (latestSnapshot?.[0]?.snapshot?.roundEnd === roundEnd) {
-    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; waiting for next market round" : "waiting for next market round" };
+    return { importedSales, publishedLines: 0, referenceTime, simulatorResetId, status: resetDetected ? "service reset; waiting for next five-minute round" : "waiting for next five-minute round" };
   }
 
   const pricedProducts = (marketProducts ?? []).map(product => ({
@@ -127,7 +129,6 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
     isSoldOut: product.is_sold_out,
   }));
   const decisions = priceMarket(pricedProducts, recentSales ?? []);
-  const now = new Date().toISOString();
 
   const changed = decisions
     .map((decision, index) => ({ ...decision, posProductId: pricedProducts[index].posProductId }))
@@ -158,7 +159,13 @@ export async function runMarketCycle({ supabase, simulatorUrl, venueSlug, fetchI
     venue_id: venue.id,
     reason: "simulator_cycle",
     status: "published",
-    snapshot: { referenceTime, roundStart, roundEnd, importedSales, decisions },
+    snapshot: {
+      referenceTime,
+      roundStart,
+      roundEnd,
+      importedSales,
+      decisions,
+    },
   });
   throwIfError(snapshotError, "write market snapshot");
 

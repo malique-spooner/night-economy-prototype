@@ -1,22 +1,34 @@
 import { useEffect } from "react";
 import { Menu } from "./pages/Menu";
 import { Portal } from "./pages/Portal";
+import { PortalSignIn } from "./pages/PortalSignIn";
 import { Site } from "./pages/Site";
 import { Tv } from "./pages/Tv";
 import { resolveAppRoute } from "./routes";
 
 export function App() {
   const route = resolveAppRoute(window.location.pathname, window.location.search);
-  const appView = route.surface === "app" ? "portal" : route.surface === "menu" ? "mobile" : route.surface;
+  const appView = route.surface === "app" || route.surface === "sign-in"
+    ? "portal"
+    : route.surface === "menu"
+      ? "mobile"
+      : route.surface === "venue"
+        ? "site"
+        : route.surface;
 
   useEffect(() => {
     document.body.dataset.appView = appView;
-    return () => { delete document.body.dataset.appView; };
+    document.documentElement.dataset.appView = appView;
+    return () => {
+      delete document.body.dataset.appView;
+      delete document.documentElement.dataset.appView;
+    };
   }, [appView]);
 
   if (route.surface === "tv") return <Tv venueSlug={route.slug ?? "demo-venue"} />;
   if (route.surface === "menu") return <Menu venueSlug={route.slug ?? "demo-venue"} />;
   if (route.surface === "app") return <Portal venueSlug={route.slug ?? "demo-venue"} />;
+  if (route.surface === "sign-in") return <PortalSignIn venueSlug={route.slug ?? "demo-venue"} />;
 
   return <Site venueSlug={route.slug ?? "demo-venue"} />;
 }

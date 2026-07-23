@@ -56,6 +56,10 @@ Apply the output in the Supabase SQL editor for the target project. The bundle i
 010_server_runner_privileges.sql
 011_link_demo_market_products_to_pos_products.sql
 012_align_demo_catalogue_with_simulator_product_ids.sql
+013_tlj_menu_catalogue.sql
+014_hide_legacy_demo_catalogue.sql
+015_pos_catalogue_grouping.sql
+016_configure_wine_market_variants.sql
 ```
 
 After applying SQL, create a Supabase Auth operator user and print the venue access grant:
@@ -86,6 +90,8 @@ Deploy the market job from an environment with the Supabase CLI and Deno availab
 ```bash
 supabase functions deploy market-cycle
 ```
+
+Schedule the deployed function every **5 minutes**. Each run updates every live category from the previous five minutes of POS sales.
 
 Invoke it only with the scheduler header:
 

@@ -32,8 +32,8 @@ export function PortalAuthPanel({
 
   return (
     <div className="portal-plan-card">
-      <span>{isConfigured ? "Portal access" : "Demo mode"}</span>
-      <strong>{isSignedIn ? "Signed in" : "Operator sign in"}</strong>
+      <span>{isConfigured ? "Venue operator account" : "Demo mode"}</span>
+      <strong>{isSignedIn ? "Venue operator signed in" : "Sign in for this venue"}</strong>
       {isSignedIn ? (
         <button className="portal-signout" type="button" onClick={onSignOut}>Sign out</button>
       ) : (
@@ -54,7 +54,7 @@ export function PortalAuthPanel({
             type="password"
             value={password}
           />
-          <button disabled={!isConfigured} type="submit">Sign in</button>
+          <button disabled={!isConfigured} type="submit">Sign in to Portal</button>
         </form>
       )}
       <small>{error || statusMessage}</small>

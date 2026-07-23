@@ -35,8 +35,8 @@ const checks = [
     pattern: /MARKET_INTENSITY = 1\.25[\s\S]+activityFactor[\s\S]+allowedRange/,
   },
   {
-    label: "uses a fifteen-minute POS sales round",
-    pattern: /cycleEnd\.getTime\(\) - 15 \* 60_000/,
+    label: "uses a five-minute POS sales round",
+    pattern: /cycleEnd\.getTime\(\) - MARKET_CYCLE_MS/,
   },
   {
     label: "respects venue market live state",

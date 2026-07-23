@@ -12,7 +12,7 @@ type Props = {
 };
 
 export function PortalAccountPage({ email, isSignedIn, liveCount, role, source, totalCount, venue }: Props) {
-  const access = source === "seed" ? "Demo access" : role ? `${role} access` : "No venue access";
+  const access = source === "seed" ? "Demo access" : role ? "Shared venue operator" : "No venue access";
 
   return (
     <section className="portal-page-grid">
@@ -27,7 +27,7 @@ export function PortalAccountPage({ email, isSignedIn, liveCount, role, source, 
       <article className="portal-account-card">
         <dl className="portal-account-list">
           <div><dt>Venue</dt><dd>{venue.name}</dd></div>
-          <div><dt>Email</dt><dd>{isSignedIn ? email || "Signed in" : "Not signed in"}</dd></div>
+          <div><dt>Operator email</dt><dd>{isSignedIn ? email || "Signed in" : "Not signed in"}</dd></div>
           <div><dt>Timezone</dt><dd>{venue.timezone}</dd></div>
           <div><dt>Currency</dt><dd>{venue.currency}</dd></div>
         </dl>
@@ -36,7 +36,7 @@ export function PortalAccountPage({ email, isSignedIn, liveCount, role, source, 
       <article className="portal-account-card">
         <dl className="portal-account-list">
           <div><dt>Status</dt><dd>{venue.marketLive ? "Market live" : "Market paused"}</dd></div>
-          <div><dt>Access</dt><dd>{access}</dd></div>
+          <div><dt>Account</dt><dd>{access}</dd></div>
           <div><dt>Products</dt><dd>{liveCount}/{totalCount} live</dd></div>
           <div><dt>Data</dt><dd>{source === "supabase" ? "Supabase" : "Seed fallback"}</dd></div>
         </dl>

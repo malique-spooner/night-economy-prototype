@@ -22,6 +22,8 @@
     "runtime:verify": "node scripts/verify-runtime.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "supabase:grant-operator": "node scripts/print-operator-grant-sql.mjs",
+    "supabase:create-operator": "node scripts/create-venue-operator.mjs",
+    "supabase:verify-operator": "node scripts/verify-venue-operator.mjs",
     "supabase:smoke-live": "node scripts/smoke-supabase-live.mjs",
     "supabase:verify-smoke": "node scripts/verify-live-smoke-script.mjs",
     "supabase:verify-sql": "node scripts/verify-supabase-sql.mjs",

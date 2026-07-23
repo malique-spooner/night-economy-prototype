@@ -65,7 +65,7 @@ export function PortalMarketDetail({ history, isLoading, product }: Props) {
       <div className="portal-market-history">
         <div className="portal-market-history-head">
           <span>Price history</span>
-          <small>{isLoading ? "Loading rounds…" : history.length ? `${history.length} completed 15-minute rounds` : "No completed rounds yet"}</small>
+          <small>{isLoading ? "Loading rounds…" : history.length ? `${history.length} completed 5-minute rounds` : "No completed rounds yet"}</small>
         </div>
         <svg viewBox="0 0 520 104" role="img" aria-label={`${product.name} price history`} preserveAspectRatio="none">
           <line x1="8" x2="512" y1="52" y2="52" />
